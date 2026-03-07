@@ -729,6 +729,51 @@ export type Database = {
         }
         Relationships: []
       }
+      scholarships: {
+        Row: {
+          coverage_percentage: number
+          coverage_type: string
+          created_at: string
+          created_by: string | null
+          end_date: string | null
+          id: string
+          is_active: boolean
+          notes: string | null
+          organization_name: string
+          start_date: string
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          coverage_percentage?: number
+          coverage_type?: string
+          created_at?: string
+          created_by?: string | null
+          end_date?: string | null
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          organization_name: string
+          start_date?: string
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          coverage_percentage?: number
+          coverage_type?: string
+          created_at?: string
+          created_by?: string | null
+          end_date?: string | null
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          organization_name?: string
+          start_date?: string
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       student_profiles: {
         Row: {
           address: string | null
