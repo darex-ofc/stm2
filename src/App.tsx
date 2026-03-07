@@ -52,6 +52,7 @@ import AdminAnnouncements from "./pages/admin/AdminAnnouncements";
 import AdminFees from "./pages/admin/AdminFees";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminApplications from "./pages/admin/AdminApplications";
+import AdminFinance from "./pages/admin/AdminFinance";
 
 const queryClient = new QueryClient();
 
@@ -108,6 +109,7 @@ const App = () => (
               <Route path="/admin/announcements" element={<ProtectedRoute allowedRoles={["admin"]}><AdminAnnouncements /></ProtectedRoute>} />
               <Route path="/admin/fees" element={<ProtectedRoute allowedRoles={["admin"]}><AdminFees /></ProtectedRoute>} />
               <Route path="/admin/settings" element={<ProtectedRoute allowedRoles={["admin"]}><AdminSettings /></ProtectedRoute>} />
+              <Route path="/admin/finance" element={<ProtectedRoute allowedRoles={["admin"]}><AdminFinance /></ProtectedRoute>} />
 
               <Route path="*" element={<NotFound />} />
             </Routes>
