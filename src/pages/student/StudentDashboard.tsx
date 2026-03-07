@@ -99,6 +99,7 @@ const StudentDashboard = () => {
             <p className="text-muted-foreground text-sm">
               {studentProfile && (
                 <span>
+                  {studentProfile.student_id && <span className="font-mono font-semibold text-primary mr-2">{studentProfile.student_id}</span>}
                   {studentProfile.level?.replace("_", " ").toUpperCase()} • Form {studentProfile.form}
                 </span>
               )}

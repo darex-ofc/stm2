@@ -323,9 +323,16 @@ const StudentReports = () => {
   return (
     <DashboardLayout role="student">
       <div className="space-y-6">
-        <div>
-          <h1 className="font-display text-2xl font-bold text-foreground">My Academic Records</h1>
-          <p className="text-sm text-muted-foreground">View your report cards, monthly test results, and attendance</p>
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <h1 className="font-display text-2xl font-bold text-foreground">My Academic Records</h1>
+            <p className="text-sm text-muted-foreground">View your report cards, monthly test results, and attendance</p>
+          </div>
+          {studentProfile?.student_id && (
+            <Badge variant="outline" className="font-mono text-sm px-3 py-1">
+              {studentProfile.student_id}
+            </Badge>
+          )}
         </div>
 
         {/* Blocked Messages */}

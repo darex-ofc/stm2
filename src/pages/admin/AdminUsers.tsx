@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Users, Search, GraduationCap, BookOpen, Shield, Trash2, Eye, ArrowUpDown, Mail, Phone, Save, Edit } from "lucide-react";
+import { Users, Search, GraduationCap, BookOpen, Shield, Trash2, Eye, ArrowUpDown, Mail, Phone, Save, Edit, UserX, UserCheck } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 const AdminUsers = () => {
@@ -34,8 +34,10 @@ const AdminUsers = () => {
       supabase.from("teacher_profiles").select("*"),
     ]);
     const roleMap: Record<string, string> = {};
-    (rolesRes.data || []).forEach((r: any) => { roleMap[r.user_id] = r.role; });
-    setUsers((profilesRes.data || []).map((p: any) => ({ ...p, role: roleMap[p.user_id] || "unassigned" })));
+    const spMap: Record<string, any> = {};
+    (studentRes.data || []).forEach((s: any) => { spMap[s.user_id] = s; });
+    setUsers((profilesRes.data || []).map((p: any) => ({ ...p, role: roleMap[p.user_id] || "unassigned", studentProfile: spMap[p.user_id] || null })));
+    setStudentProfiles(studentRes.data || []);
     setStudentProfiles(studentRes.data || []);
     setTeacherProfiles(teacherRes.data || []);
     setLoading(false);
@@ -85,6 +87,18 @@ const AdminUsers = () => {
     setSaving(false);
   };
 
+  const handleTransferStudent = async (userId: string, currentlyActive: boolean) => {
+    const action = currentlyActive ? "transfer (deactivate)" : "reactivate";
+    if (!confirm(`Are you sure you want to ${action} this student?`)) return;
+    const { error } = await supabase.from("student_profiles").update({ is_active: !currentlyActive }).eq("user_id", userId);
+    if (error) toast({ title: "Error", description: error.message, variant: "destructive" });
+    else {
+      toast({ title: currentlyActive ? "Student Transferred" : "Student Reactivated", description: currentlyActive ? "Student has been marked as transferred and deactivated." : "Student has been reactivated." });
+      fetchData();
+      setDetailOpen(false);
+    }
+  };
+
   const sorted = (list: any[]) => {
     return [...list].sort((a, b) => {
       const aVal = (a[sortField] || "").toString().toLowerCase();
@@ -130,8 +144,11 @@ const AdminUsers = () => {
         ) : sorted(data).length === 0 ? (
           <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No users found.</TableCell></TableRow>
         ) : sorted(data).map(u => (
-          <TableRow key={u.id}>
-            <TableCell className="font-medium">{u.full_name}</TableCell>
+          <TableRow key={u.id} className={u.studentProfile?.is_active === false ? "opacity-50 bg-destructive/5" : ""}>
+            <TableCell className="font-medium">
+              {u.full_name}
+              {u.studentProfile?.is_active === false && <span className="ml-2 px-1.5 py-0.5 text-[10px] rounded bg-destructive/10 text-destructive font-medium">TRANSFERRED</span>}
+            </TableCell>
             <TableCell className="text-sm">{u.email}</TableCell>
             <TableCell className="text-sm">{u.phone || "—"}</TableCell>
             {showRole && <TableCell>{roleBadge(u.role)}</TableCell>}
@@ -219,6 +236,24 @@ const AdminUsers = () => {
 
                 {selectedUser.studentProfile && (
                   <>
+                    {/* Transfer/Status Banner */}
+                    <div className={`flex items-center justify-between p-3 rounded-lg border ${selectedUser.studentProfile.is_active === false ? "bg-destructive/5 border-destructive/20" : "bg-green-500/5 border-green-500/20"}`}>
+                      <div className="flex items-center gap-2">
+                        {selectedUser.studentProfile.is_active === false ? (
+                          <><UserX className="w-5 h-5 text-destructive" /><div><p className="font-medium text-destructive">Transferred / Deactivated</p><p className="text-xs text-muted-foreground">This student is no longer active</p></div></>
+                        ) : (
+                          <><UserCheck className="w-5 h-5 text-green-600" /><div><p className="font-medium text-green-700">Active Student</p><p className="text-xs text-muted-foreground">Student ID: <span className="font-mono font-semibold">{selectedUser.studentProfile.student_id || "—"}</span></p></div></>
+                        )}
+                      </div>
+                      <Button
+                        variant={selectedUser.studentProfile.is_active === false ? "outline" : "destructive"}
+                        size="sm"
+                        onClick={() => handleTransferStudent(selectedUser.user_id, selectedUser.studentProfile.is_active !== false)}
+                      >
+                        {selectedUser.studentProfile.is_active === false ? <><UserCheck className="w-4 h-4 mr-1" /> Reactivate</> : <><UserX className="w-4 h-4 mr-1" /> Transfer</>}
+                      </Button>
+                    </div>
+
                     <Card>
                       <CardHeader>
                         <div className="flex items-center justify-between">
