@@ -138,7 +138,7 @@ const Login = () => {
         {/* Portal Selection */}
         {!selectedPortal ? (
           <div className="space-y-4">
-            {(["student", "teacher", "admin"] as PortalType[]).map((portal) => {
+            {(["student", "teacher", "parent", "admin"] as PortalType[]).map((portal) => {
               const config = portalConfig[portal];
               return (
                 <Card
