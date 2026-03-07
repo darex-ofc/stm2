@@ -46,6 +46,26 @@ const StudentFees = () => {
       <div className="space-y-6">
         <h1 className="font-display text-2xl font-bold text-foreground">Fee Records</h1>
 
+        {scholarship && (
+          <Card className="border-primary/30 bg-primary/5">
+            <CardContent className="p-4 flex items-center gap-3">
+              <GraduationCap className="w-6 h-6 text-primary shrink-0" />
+              <div>
+                <p className="font-semibold text-foreground">
+                  Scholarship: {scholarship.organization_name}
+                  <span className="ml-2 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                    {scholarship.coverage_type === "full" ? "Fully Sponsored" : `${scholarship.coverage_percentage}% Covered`}
+                  </span>
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Since {new Date(scholarship.start_date).toLocaleDateString()}
+                  {scholarship.end_date && ` • Expires ${new Date(scholarship.end_date).toLocaleDateString()}`}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card>
             <CardContent className="p-4 text-center">
