@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Search, RotateCcw, FileDown, BarChart3, UserSearch, BookOpen, ClipboardCheck, DollarSign, Heart, Shield, X } from "lucide-react";
+import { Search, RotateCcw, FileDown, BarChart3, UserSearch, BookOpen, ClipboardCheck, DollarSign, Heart, Shield, X, ScanLine } from "lucide-react";
+import BarcodeScanner from "@/components/admin/fees/BarcodeScanner";
 
 import FeeStructureCard from "@/components/admin/fees/FeeStructureCard";
 import FeeStatsCards from "@/components/admin/fees/FeeStatsCards";
