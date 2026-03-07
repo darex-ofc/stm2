@@ -215,9 +215,20 @@ const AdminApplications = () => {
   return (
     <DashboardLayout role="admin">
       <div className="space-y-6">
-        <div>
-          <h1 className="font-display text-2xl font-bold text-foreground">Applications</h1>
-          <p className="text-muted-foreground text-sm">Review student enrollment applications & access requests</p>
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <h1 className="font-display text-2xl font-bold text-foreground">Applications</h1>
+            <p className="text-muted-foreground text-sm">Review student enrollment applications & access requests</p>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => {
+            const count = exportCSV("applications",
+              ["Name", "Email", "Phone", "Level", "Form", "Guardian", "Guardian Phone", "Previous School", "Status", "Date"],
+              applications.map(a => [a.full_name, a.email, a.phone || "", a.level, `Form ${a.form}`, a.guardian_name || "", a.guardian_phone || "", a.previous_school || "", a.status, new Date(a.created_at).toLocaleDateString()])
+            );
+            toast({ title: "Exported", description: `${count} applications exported.` });
+          }} disabled={applications.length === 0}>
+            <FileDown className="w-4 h-4 mr-1" /> Export CSV
+          </Button>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
