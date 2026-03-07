@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Users, Search, GraduationCap, BookOpen, Shield, Trash2, Eye, ArrowUpDown, Mail, Phone, Save, Edit } from "lucide-react";
+import { Users, Search, GraduationCap, BookOpen, Shield, Trash2, Eye, ArrowUpDown, Mail, Phone, Save, Edit, UserX, UserCheck } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 const AdminUsers = () => {
@@ -34,8 +34,10 @@ const AdminUsers = () => {
       supabase.from("teacher_profiles").select("*"),
     ]);
     const roleMap: Record<string, string> = {};
-    (rolesRes.data || []).forEach((r: any) => { roleMap[r.user_id] = r.role; });
-    setUsers((profilesRes.data || []).map((p: any) => ({ ...p, role: roleMap[p.user_id] || "unassigned" })));
+    const spMap: Record<string, any> = {};
+    (studentRes.data || []).forEach((s: any) => { spMap[s.user_id] = s; });
+    setUsers((profilesRes.data || []).map((p: any) => ({ ...p, role: roleMap[p.user_id] || "unassigned", studentProfile: spMap[p.user_id] || null })));
+    setStudentProfiles(studentRes.data || []);
     setStudentProfiles(studentRes.data || []);
     setTeacherProfiles(teacherRes.data || []);
     setLoading(false);
