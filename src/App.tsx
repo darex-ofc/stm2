@@ -30,6 +30,8 @@ import TeacherReports from "./pages/teacher/TeacherReports";
 import TeacherAnnouncements from "./pages/teacher/TeacherAnnouncements";
 import TeacherProfile from "./pages/teacher/TeacherProfile";
 import TeacherMonthlyTests from "./pages/teacher/TeacherMonthlyTests";
+import TeacherRankings from "./pages/teacher/TeacherRankings";
+import TeacherMessages from "./pages/teacher/TeacherMessages";
 
 // Student pages
 import StudentDashboard from "./pages/student/StudentDashboard";
@@ -40,6 +42,8 @@ import StudentAnnouncements from "./pages/student/StudentAnnouncements";
 import StudentFees from "./pages/student/StudentFees";
 import StudentProfile from "./pages/student/StudentProfile";
 import StudentStudyPal from "./pages/student/StudentStudyPal";
+import StudentRankings from "./pages/student/StudentRankings";
+import StudentMessages from "./pages/student/StudentMessages";
 
 // Admin pages
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -53,6 +57,15 @@ import AdminFees from "./pages/admin/AdminFees";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminApplications from "./pages/admin/AdminApplications";
 import AdminFinance from "./pages/admin/AdminFinance";
+import AdminRankings from "./pages/admin/AdminRankings";
+import AdminMessages from "./pages/admin/AdminMessages";
+
+// Parent pages
+import ParentDashboard from "./pages/parent/ParentDashboard";
+import ParentGrades from "./pages/parent/ParentGrades";
+import ParentAttendance from "./pages/parent/ParentAttendance";
+import ParentFees from "./pages/parent/ParentFees";
+import ParentMessages from "./pages/parent/ParentMessages";
 
 const queryClient = new QueryClient();
 
