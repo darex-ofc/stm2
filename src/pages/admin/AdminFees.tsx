@@ -228,9 +228,16 @@ const AdminFees = () => {
             <Button variant="outline" size="sm" onClick={() => setShowCharts(!showCharts)}>
               <BarChart3 className="w-4 h-4 mr-1" /> {showCharts ? "Hide Charts" : "Charts"}
             </Button>
-            <Button variant="outline" size="sm" onClick={() => generateCSVReport(filtered, getStudentName, zigRate)}>
-              <FileDown className="w-4 h-4 mr-1" /> Export CSV
-            </Button>
+            <ExportDropdown
+              title="Fee Records Report"
+              filename="fee_report"
+              headers={["Student", "Year", "Term", "Due (USD)", "Paid (USD)", "Balance", "Method", "Receipt", "Status", "Date"]}
+              rows={filtered.map(r => {
+                const balance = Number(r.amount_due) - Number(r.amount_paid);
+                return [getStudentName(r.student_id), r.academic_year, r.term.replace("_", " "), Number(r.amount_due).toFixed(2), Number(r.amount_paid).toFixed(2), balance.toFixed(2), methodLabel((r as any).payment_method || "cash"), r.receipt_number || "", balance <= 0 ? "Paid" : "Owing", r.payment_date || ""];
+              })}
+              disabled={filtered.length === 0}
+            />
           </div>
         </div>
 
@@ -419,7 +426,13 @@ const AdminFees = () => {
                   </div>
                   <div className="flex gap-2">
                     <Button onClick={handleAddScholarship}><Plus className="w-4 h-4 mr-1" /> Add Scholarship</Button>
-                    <Button variant="outline" onClick={exportScholarshipsCSV} disabled={scholarships.length === 0}><FileDown className="w-4 h-4 mr-1" /> Export CSV</Button>
+                    <ExportDropdown
+                      title="Scholarships Report"
+                      filename="scholarships_report"
+                      headers={["Student Name", "Student ID", "Organization", "Coverage Type", "Coverage %", "Start Date", "End Date", "Status", "Notes"]}
+                      rows={scholarshipExportRows}
+                      disabled={scholarships.length === 0}
+                    />
                   </div>
                 </CardContent>
               </Card>
