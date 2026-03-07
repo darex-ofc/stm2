@@ -13,6 +13,7 @@ const StudentFees = () => {
   const { user } = useAuth();
   const [fees, setFees] = useState<any[]>([]);
   const [studentName, setStudentName] = useState("");
+  const [className, setClassName] = useState<string | undefined>(undefined);
   const zigRate = DEFAULT_ZIG_RATE;
 
   useEffect(() => {
@@ -21,6 +22,13 @@ const StudentFees = () => {
       .then(({ data }) => setFees((data || []).filter((f: any) => !f.deleted_at)));
     supabase.from("profiles").select("full_name").eq("user_id", user.id).single()
       .then(({ data }) => setStudentName(data?.full_name || ""));
+    supabase.from("student_profiles").select("class_id").eq("user_id", user.id).single()
+      .then(async ({ data }) => {
+        if (data?.class_id) {
+          const { data: cls } = await supabase.from("classes").select("name, stream").eq("id", data.class_id).single();
+          if (cls) setClassName(`${cls.name}${cls.stream ? ` (${cls.stream})` : ""}`);
+        }
+      });
   }, [user]);
 
   const totalDue = fees.reduce((s, f) => s + Number(f.amount_due), 0);

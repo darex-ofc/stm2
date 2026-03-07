@@ -25,6 +25,7 @@ const AdminFees = () => {
   const [deletedFees, setDeletedFees] = useState<any[]>([]);
   const [students, setStudents] = useState<any[]>([]);
   const [studentProfiles, setStudentProfiles] = useState<any[]>([]);
+  const [classes, setClasses] = useState<any[]>([]);
   const [sessions, setSessions] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
@@ -53,18 +54,20 @@ const AdminFees = () => {
 
   const fetchData = async () => {
     setLoading(true);
-    const [feeRes, profilesRes, rolesRes, sessionsRes, spRes, subjectsRes] = await Promise.all([
+    const [feeRes, profilesRes, rolesRes, sessionsRes, spRes, subjectsRes, classesRes] = await Promise.all([
       supabase.from("fee_records").select("*").order("created_at", { ascending: false }),
       supabase.from("profiles").select("*"),
       supabase.from("user_roles").select("*").eq("role", "student"),
       supabase.from("academic_sessions").select("*").order("academic_year"),
       supabase.from("student_profiles").select("*"),
       supabase.from("subjects").select("*").is("deleted_at", null),
+      supabase.from("classes").select("*").is("deleted_at", null),
     ]);
     const profiles = profilesRes.data || [];
     const studentIds = new Set((rolesRes.data || []).map((r: any) => r.user_id));
     setStudents(profiles.filter((p: any) => studentIds.has(p.user_id)));
     setStudentProfiles(spRes.data || []);
+    setClasses(classesRes.data || []);
     const all = feeRes.data || [];
     setFeeRecords(all.filter((f: any) => !f.deleted_at));
     setDeletedFees(all.filter((f: any) => f.deleted_at));
@@ -76,6 +79,12 @@ const AdminFees = () => {
   useEffect(() => { fetchData(); }, []);
 
   const getStudentName = (id: string) => students.find((s) => s.user_id === id)?.full_name || "Unknown";
+  const getStudentClassName = (studentId: string) => {
+    const sp = studentProfiles.find((s: any) => s.user_id === studentId);
+    if (!sp?.class_id) return undefined;
+    const cls = classes.find((c: any) => c.id === sp.class_id);
+    return cls ? `${cls.name}${cls.stream ? ` (${cls.stream})` : ""}` : undefined;
+  };
   const getSubjectName = (id: string) => subjects.find((s: any) => s.id === id)?.name || "—";
   const years = [...new Set(sessions.map((s) => s.academic_year))].sort((a: number, b: number) => b - a);
   if (years.length === 0) years.push(new Date().getFullYear());
@@ -232,7 +241,7 @@ const AdminFees = () => {
               onPay={r => { setPayRecord(r); setPayOpen(true); }}
               onEdit={r => { setEditFee({ ...r }); setEditOpen(true); }}
               onDelete={handleDelete}
-              onPrintReceipt={r => printReceipt(r, getStudentName(r.student_id), zigRate)}
+              onPrintReceipt={r => printReceipt(r, getStudentName(r.student_id), zigRate, getStudentClassName(r.student_id))}
             />
           </TabsContent>
 
