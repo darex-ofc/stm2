@@ -28,6 +28,8 @@ const TeacherGrades = () => {
   const [editComment, setEditComment] = useState("");
   const [stats, setStats] = useState({ highest: 0, lowest: 0, average: 0 });
   const [distribution, setDistribution] = useState<any[]>([]);
+  const [selectedSubjectId, setSelectedSubjectId] = useState<string>("");
+  const [selectedClassId, setSelectedClassId] = useState<string>("");
 
   useEffect(() => {
     if (!user) return;
