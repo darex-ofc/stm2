@@ -159,7 +159,44 @@ const AdminFees = () => {
   const attPresent = studentAttendance.filter(a => a.status === "present").length;
   const attTotal = studentAttendance.length;
 
-  return (
+  // Scholarship handlers
+  const handleAddScholarship = async () => {
+    if (!scholarshipForm.student_id || !scholarshipForm.organization_name) {
+      toast({ title: "Missing fields", description: "Select a student and enter organization name.", variant: "destructive" });
+      return;
+    }
+    const { error } = await supabase.from("scholarships").insert({
+      student_id: scholarshipForm.student_id,
+      organization_name: scholarshipForm.organization_name,
+      coverage_type: scholarshipForm.coverage_type,
+      coverage_percentage: Number(scholarshipForm.coverage_percentage),
+      end_date: scholarshipForm.end_date || null,
+      notes: scholarshipForm.notes || null,
+      created_by: (await supabase.auth.getUser()).data.user?.id,
+    } as any);
+    if (error) toast({ title: "Error", description: error.message, variant: "destructive" });
+    else {
+      toast({ title: "Scholarship Added" });
+      setScholarshipForm({ student_id: "", organization_name: "", coverage_type: "full", coverage_percentage: "100", end_date: "", notes: "" });
+      fetchData();
+    }
+  };
+
+  const handleDeleteScholarship = async (id: string) => {
+    await supabase.from("scholarships").delete().eq("id", id);
+    toast({ title: "Scholarship Removed" });
+    fetchData();
+  };
+
+  const handleToggleScholarship = async (id: string, currentActive: boolean) => {
+    await supabase.from("scholarships").update({ is_active: !currentActive, updated_at: new Date().toISOString() } as any).eq("id", id);
+    toast({ title: currentActive ? "Scholarship Deactivated" : "Scholarship Activated" });
+    fetchData();
+  };
+
+  const activeScholarships = scholarships.filter(s => s.is_active);
+
+
     <DashboardLayout role="admin">
       <div className="space-y-6">
         <div className="flex items-center justify-between flex-wrap gap-3">
