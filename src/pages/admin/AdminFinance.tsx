@@ -9,7 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { DollarSign, ShoppingCart, Plus, Trash2, Clock, TrendingDown, TrendingUp, Receipt } from "lucide-react";
+import { DollarSign, ShoppingCart, Plus, Trash2, Clock, TrendingDown, TrendingUp, Receipt, ZoomIn, Image } from "lucide-react";
+import ReceiptImageUpload from "@/components/ReceiptImageUpload";
 
 const PETTY_CASH_CATEGORIES = [
   "Stationery", "Cleaning Supplies", "Maintenance", "Transport", "Food & Beverages",
@@ -24,7 +25,8 @@ const AdminFinance = () => {
   const [profiles, setProfiles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [addOpen, setAddOpen] = useState(false);
-  const [newEntry, setNewEntry] = useState({ description: "", amount: "", category: "Stationery", payment_method: "cash", receipt_reference: "", date: new Date().toISOString().split("T")[0], notes: "" });
+  const [newEntry, setNewEntry] = useState({ description: "", amount: "", category: "Stationery", payment_method: "cash", receipt_reference: "", date: new Date().toISOString().split("T")[0], notes: "", receipt_image_url: "" });
+  const [viewingImage, setViewingImage] = useState<string | null>(null);
 
   const fetchData = async () => {
     setLoading(true);
@@ -60,13 +62,14 @@ const AdminFinance = () => {
       date: newEntry.date,
       notes: newEntry.notes || null,
       recorded_by: user?.id,
+      receipt_image_url: newEntry.receipt_image_url || null,
     } as any);
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {
       toast({ title: "Petty Cash Entry Added" });
       setAddOpen(false);
-      setNewEntry({ description: "", amount: "", category: "Stationery", payment_method: "cash", receipt_reference: "", date: new Date().toISOString().split("T")[0], notes: "" });
+      setNewEntry({ description: "", amount: "", category: "Stationery", payment_method: "cash", receipt_reference: "", date: new Date().toISOString().split("T")[0], notes: "", receipt_image_url: "" });
       fetchData();
     }
   };
