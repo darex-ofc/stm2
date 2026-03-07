@@ -35,6 +35,7 @@ const AdminFees = () => {
   const [zigRate, setZigRate] = useState(DEFAULT_ZIG_RATE);
   const [feeStructure, setFeeStructure] = useState(DEFAULT_FEE_STRUCTURE);
   const [showCharts, setShowCharts] = useState(false);
+  const [scannerOpen, setScannerOpen] = useState(false);
 
   // Payment dialog
   const [payRecord, setPayRecord] = useState<any>(null);
@@ -155,6 +156,9 @@ const AdminFees = () => {
         <div className="flex items-center justify-between flex-wrap gap-3">
           <h1 className="font-display text-2xl font-bold text-foreground">Fee Management</h1>
           <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={() => setScannerOpen(true)}>
+              <ScanLine className="w-4 h-4 mr-1" /> Verify Receipt
+            </Button>
             <Button variant="outline" size="sm" onClick={() => setShowCharts(!showCharts)}>
               <BarChart3 className="w-4 h-4 mr-1" /> {showCharts ? "Hide Charts" : "Charts"}
             </Button>
