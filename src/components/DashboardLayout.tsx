@@ -89,8 +89,8 @@ const DashboardLayout = ({ children, role }: DashboardLayoutProps) => {
   return (
     <div className="min-h-screen flex bg-muted/30">
       {/* Sidebar */}
-      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-primary text-primary-foreground transform transition-transform duration-300 lg:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
-        <div className="flex items-center gap-3 p-4 border-b border-primary-foreground/20">
+      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-primary text-primary-foreground transform transition-transform duration-300 lg:translate-x-0 flex flex-col ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
+        <div className="flex items-center gap-3 p-4 border-b border-primary-foreground/20 shrink-0">
           <img src={schoolLogo} alt="Logo" className="h-10 w-10 object-contain" />
           <div>
             <p className="font-display font-bold text-sm">St. Mary's</p>
@@ -101,7 +101,7 @@ const DashboardLayout = ({ children, role }: DashboardLayoutProps) => {
           </button>
         </div>
 
-        <nav className="p-3 space-y-1 overflow-y-auto flex-1">
+        <nav className="p-3 space-y-1 overflow-y-auto flex-1 min-h-0">
           {navItems.map((item) => {
             const isActive = location.pathname === item.path;
             return (
@@ -122,7 +122,7 @@ const DashboardLayout = ({ children, role }: DashboardLayoutProps) => {
           })}
         </nav>
 
-        <div className="p-3 border-t border-primary-foreground/20">
+        <div className="p-3 border-t border-primary-foreground/20 shrink-0">
           <Button
             variant="ghost"
             className="w-full justify-start text-primary-foreground/70 hover:text-primary-foreground hover:bg-primary-foreground/10"

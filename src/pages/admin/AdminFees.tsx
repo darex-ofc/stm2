@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Search, RotateCcw, FileDown, BarChart3, UserSearch, BookOpen, ClipboardCheck, DollarSign, Heart, Shield, X, ScanLine } from "lucide-react";
+import { Search, RotateCcw, FileDown, BarChart3, UserSearch, BookOpen, ClipboardCheck, DollarSign, Heart, Shield, X, ScanLine, GraduationCap, Plus, Trash2, Calendar } from "lucide-react";
 import BarcodeScanner from "@/components/admin/fees/BarcodeScanner";
 
 import FeeStructureCard from "@/components/admin/fees/FeeStructureCard";
@@ -37,6 +37,9 @@ const AdminFees = () => {
   const [showCharts, setShowCharts] = useState(false);
   const [scannerOpen, setScannerOpen] = useState(false);
 
+  // Scholarships
+  const [scholarships, setScholarships] = useState<any[]>([]);
+  const [scholarshipForm, setScholarshipForm] = useState({ student_id: "", organization_name: "", coverage_type: "full", coverage_percentage: "100", end_date: "", notes: "" });
   // Payment dialog
   const [payRecord, setPayRecord] = useState<any>(null);
   const [payOpen, setPayOpen] = useState(false);
@@ -56,7 +59,7 @@ const AdminFees = () => {
 
   const fetchData = async () => {
     setLoading(true);
-    const [feeRes, profilesRes, rolesRes, sessionsRes, spRes, subjectsRes, classesRes] = await Promise.all([
+    const [feeRes, profilesRes, rolesRes, sessionsRes, spRes, subjectsRes, classesRes, scholarshipRes] = await Promise.all([
       supabase.from("fee_records").select("*").order("created_at", { ascending: false }),
       supabase.from("profiles").select("*"),
       supabase.from("user_roles").select("*").eq("role", "student"),
@@ -64,6 +67,7 @@ const AdminFees = () => {
       supabase.from("student_profiles").select("*"),
       supabase.from("subjects").select("*").is("deleted_at", null),
       supabase.from("classes").select("*").is("deleted_at", null),
+      supabase.from("scholarships").select("*").order("created_at", { ascending: false }),
     ]);
     const profiles = profilesRes.data || [];
     const studentIds = new Set((rolesRes.data || []).map((r: any) => r.user_id));
@@ -75,6 +79,7 @@ const AdminFees = () => {
     setDeletedFees(all.filter((f: any) => f.deleted_at));
     setSessions(sessionsRes.data || []);
     setSubjects(subjectsRes.data || []);
+    setScholarships(scholarshipRes.data || []);
     setLoading(false);
   };
 
@@ -153,6 +158,43 @@ const AdminFees = () => {
   const lookupBalance = lookupTotalDue - lookupTotalPaid;
   const attPresent = studentAttendance.filter(a => a.status === "present").length;
   const attTotal = studentAttendance.length;
+
+  // Scholarship handlers
+  const handleAddScholarship = async () => {
+    if (!scholarshipForm.student_id || !scholarshipForm.organization_name) {
+      toast({ title: "Missing fields", description: "Select a student and enter organization name.", variant: "destructive" });
+      return;
+    }
+    const { error } = await supabase.from("scholarships").insert({
+      student_id: scholarshipForm.student_id,
+      organization_name: scholarshipForm.organization_name,
+      coverage_type: scholarshipForm.coverage_type,
+      coverage_percentage: Number(scholarshipForm.coverage_percentage),
+      end_date: scholarshipForm.end_date || null,
+      notes: scholarshipForm.notes || null,
+      created_by: (await supabase.auth.getUser()).data.user?.id,
+    } as any);
+    if (error) toast({ title: "Error", description: error.message, variant: "destructive" });
+    else {
+      toast({ title: "Scholarship Added" });
+      setScholarshipForm({ student_id: "", organization_name: "", coverage_type: "full", coverage_percentage: "100", end_date: "", notes: "" });
+      fetchData();
+    }
+  };
+
+  const handleDeleteScholarship = async (id: string) => {
+    await supabase.from("scholarships").delete().eq("id", id);
+    toast({ title: "Scholarship Removed" });
+    fetchData();
+  };
+
+  const handleToggleScholarship = async (id: string, currentActive: boolean) => {
+    await supabase.from("scholarships").update({ is_active: !currentActive, updated_at: new Date().toISOString() } as any).eq("id", id);
+    toast({ title: currentActive ? "Scholarship Deactivated" : "Scholarship Activated" });
+    fetchData();
+  };
+
+  const activeScholarships = scholarships.filter(s => s.is_active);
 
   return (
     <DashboardLayout role="admin">
@@ -242,6 +284,7 @@ const AdminFees = () => {
           <TabsList>
             <TabsTrigger value="active">Records ({filtered.length})</TabsTrigger>
             <TabsTrigger value="deleted">Deleted ({deletedFees.length})</TabsTrigger>
+            <TabsTrigger value="scholarships">Scholarships ({activeScholarships.length})</TabsTrigger>
           </TabsList>
 
           <TabsContent value="active">
@@ -276,6 +319,121 @@ const AdminFees = () => {
                 </Table>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="scholarships">
+            <div className="space-y-4">
+              {/* Add Scholarship Form */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-lg"><GraduationCap className="w-5 h-5" /> Add Scholarship / Organization Sponsorship</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div>
+                      <label className="text-xs text-muted-foreground">Student</label>
+                      <select className="w-full border border-input rounded-lg px-3 py-2 bg-background text-sm" value={scholarshipForm.student_id} onChange={e => setScholarshipForm({ ...scholarshipForm, student_id: e.target.value })}>
+                        <option value="">Select Student...</option>
+                        {students.map(s => <option key={s.user_id} value={s.user_id}>{s.full_name}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground">Organization</label>
+                      <Input placeholder="e.g. BEAM, CAMFED, HIGHERLIFE..." value={scholarshipForm.organization_name} onChange={e => setScholarshipForm({ ...scholarshipForm, organization_name: e.target.value })} />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground">Coverage</label>
+                      <select className="w-full border border-input rounded-lg px-3 py-2 bg-background text-sm" value={scholarshipForm.coverage_type} onChange={e => setScholarshipForm({ ...scholarshipForm, coverage_type: e.target.value, coverage_percentage: e.target.value === "full" ? "100" : scholarshipForm.coverage_percentage })}>
+                        <option value="full">Full (100%)</option>
+                        <option value="partial">Partial</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    {scholarshipForm.coverage_type === "partial" && (
+                      <div>
+                        <label className="text-xs text-muted-foreground">Coverage %</label>
+                        <Input type="number" min="1" max="99" value={scholarshipForm.coverage_percentage} onChange={e => setScholarshipForm({ ...scholarshipForm, coverage_percentage: e.target.value })} />
+                      </div>
+                    )}
+                    <div>
+                      <label className="text-xs text-muted-foreground">End Date (auto-expires)</label>
+                      <Input type="date" value={scholarshipForm.end_date} onChange={e => setScholarshipForm({ ...scholarshipForm, end_date: e.target.value })} />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground">Notes</label>
+                      <Input placeholder="Optional notes..." value={scholarshipForm.notes} onChange={e => setScholarshipForm({ ...scholarshipForm, notes: e.target.value })} />
+                    </div>
+                  </div>
+                  <Button onClick={handleAddScholarship}><Plus className="w-4 h-4 mr-1" /> Add Scholarship</Button>
+                </CardContent>
+              </Card>
+
+              {/* Scholarships Table */}
+              <Card>
+                <CardContent className="p-0">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Student</TableHead>
+                        <TableHead>Organization</TableHead>
+                        <TableHead>Coverage</TableHead>
+                        <TableHead>Period</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {scholarships.length === 0 ? (
+                        <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No scholarships configured.</TableCell></TableRow>
+                      ) : scholarships.map(s => {
+                        const isExpired = s.end_date && new Date(s.end_date) < new Date();
+                        return (
+                          <TableRow key={s.id} className={!s.is_active ? "opacity-50" : ""}>
+                            <TableCell className="font-medium">{getStudentName(s.student_id)}</TableCell>
+                            <TableCell>
+                              <span className="px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">{s.organization_name}</span>
+                            </TableCell>
+                            <TableCell>
+                              {s.coverage_type === "full" ? (
+                                <span className="text-green-600 font-bold">100%</span>
+                              ) : (
+                                <span className="font-bold">{s.coverage_percentage}%</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-sm">
+                              <div>{new Date(s.start_date).toLocaleDateString()}</div>
+                              {s.end_date && (
+                                <div className={`text-xs ${isExpired ? "text-destructive" : "text-muted-foreground"}`}>
+                                  <Calendar className="w-3 h-3 inline mr-1" />
+                                  {isExpired ? "Expired" : "Ends"}: {new Date(s.end_date).toLocaleDateString()}
+                                </div>
+                              )}
+                              {!s.end_date && <div className="text-xs text-muted-foreground">No end date</div>}
+                            </TableCell>
+                            <TableCell>
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${s.is_active && !isExpired ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+                                {s.is_active && !isExpired ? "Active" : isExpired ? "Expired" : "Inactive"}
+                              </span>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex gap-1">
+                                <Button variant="ghost" size="sm" onClick={() => handleToggleScholarship(s.id, s.is_active)}>
+                                  {s.is_active ? "Deactivate" : "Activate"}
+                                </Button>
+                                <Button variant="ghost" size="sm" onClick={() => handleDeleteScholarship(s.id)}>
+                                  <Trash2 className="w-4 h-4 text-destructive" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
         </Tabs>
 
