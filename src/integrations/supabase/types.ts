@@ -503,6 +503,42 @@ export type Database = {
         }
         Relationships: []
       }
+      homepage_updates: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string
+          display_order: number
+          id: string
+          image_url: string | null
+          is_active: boolean
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description: string
+          display_order?: number
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          display_order?: number
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       message_reads: {
         Row: {
           id: string
@@ -770,6 +806,63 @@ export type Database = {
           organization_name?: string
           start_date?: string
           student_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      staff_gallery: {
+        Row: {
+          bio: string | null
+          category: string
+          created_at: string
+          created_by: string | null
+          department: string | null
+          display_order: number
+          education: string | null
+          email: string | null
+          experience: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean
+          name: string
+          position: string
+          subject: string | null
+          updated_at: string
+        }
+        Insert: {
+          bio?: string | null
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          department?: string | null
+          display_order?: number
+          education?: string | null
+          email?: string | null
+          experience?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          name: string
+          position: string
+          subject?: string | null
+          updated_at?: string
+        }
+        Update: {
+          bio?: string | null
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          department?: string | null
+          display_order?: number
+          education?: string | null
+          email?: string | null
+          experience?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          name?: string
+          position?: string
+          subject?: string | null
           updated_at?: string
         }
         Relationships: []

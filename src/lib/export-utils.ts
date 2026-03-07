@@ -45,7 +45,7 @@ export const exportPDF = (opts: ExportOptions) => {
   doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(100);
-  doc.text("We Think We Can and Indeed We Can", doc.internal.pageSize.getWidth() / 2, 24, { align: "center" });
+  doc.text("Excellence & Integrity", doc.internal.pageSize.getWidth() / 2, 24, { align: "center" });
 
   // Title
   doc.setFontSize(13);
