@@ -116,7 +116,7 @@ const StudentFees = () => {
                       </TableCell>
                       <TableCell>
                         {f.receipt_number && (
-                          <Button variant="ghost" size="sm" onClick={() => printReceipt(f, studentName, zigRate)}>
+                          <Button variant="ghost" size="sm" onClick={() => printReceipt(f, studentName, zigRate, className)}>
                             <Printer className="w-4 h-4" />
                           </Button>
                         )}
