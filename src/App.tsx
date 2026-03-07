@@ -38,6 +38,7 @@ import StudentReports from "./pages/student/StudentReports";
 import StudentAnnouncements from "./pages/student/StudentAnnouncements";
 import StudentFees from "./pages/student/StudentFees";
 import StudentProfile from "./pages/student/StudentProfile";
+import StudentStudyPal from "./pages/student/StudentStudyPal";
 
 // Admin pages
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -92,6 +93,7 @@ const App = () => (
             <Route path="/student/announcements" element={<ProtectedRoute allowedRoles={["student"]}><StudentAnnouncements /></ProtectedRoute>} />
             <Route path="/student/fees" element={<ProtectedRoute allowedRoles={["student"]}><StudentFees /></ProtectedRoute>} />
             <Route path="/student/profile" element={<ProtectedRoute allowedRoles={["student"]}><StudentProfile /></ProtectedRoute>} />
+            <Route path="/student/study-pal" element={<ProtectedRoute allowedRoles={["student"]}><StudentStudyPal /></ProtectedRoute>} />
 
             {/* Admin Portal */}
             <Route path="/admin" element={<ProtectedRoute allowedRoles={["admin"]}><AdminDashboard /></ProtectedRoute>} />

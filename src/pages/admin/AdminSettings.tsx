@@ -7,8 +7,9 @@ import { Table, TableHeader, TableHead, TableBody, TableRow, TableCell } from "@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Calendar, CheckCircle, Edit, User, Save, Shield } from "lucide-react";
+import { Calendar, CheckCircle, Edit, User, Save, Shield, Lock, Unlock, FileText } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
 
 const AdminSettings = () => {
   const { user, profile } = useAuth();
@@ -17,6 +18,7 @@ const AdminSettings = () => {
   const [currentSession, setCurrentSession] = useState<any>(null);
   const [editSession, setEditSession] = useState<any>(null);
   const [editOpen, setEditOpen] = useState(false);
+  const [reportsLocked, setReportsLocked] = useState(true);
 
   // Profile editing
   const [fullName, setFullName] = useState(profile?.full_name || "");
@@ -24,9 +26,7 @@ const AdminSettings = () => {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (profile) {
-      setFullName(profile.full_name || "");
-    }
+    if (profile) setFullName(profile.full_name || "");
   }, [profile]);
 
   useEffect(() => {
@@ -35,6 +35,31 @@ const AdminSettings = () => {
         .then(({ data }) => { if (data?.phone) setPhone(data.phone); });
     }
   }, [user]);
+
+  // Fetch system settings
+  useEffect(() => {
+    supabase.from("system_settings").select("*").eq("key", "reports_locked").single()
+      .then(({ data }) => { if (data) setReportsLocked(data.value === "true"); });
+  }, []);
+
+  const toggleReportsLock = async () => {
+    const newValue = !reportsLocked;
+    const { error } = await supabase.from("system_settings").update({
+      value: newValue ? "true" : "false",
+      updated_at: new Date().toISOString(),
+      updated_by: user?.id
+    }).eq("key", "reports_locked");
+
+    if (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } else {
+      setReportsLocked(newValue);
+      toast({ title: newValue ? "Reports Locked" : "Reports Unlocked", description: newValue ? "Students cannot view report cards." : "Students can now view their report cards (if fees are cleared)." });
+      if (user) {
+        await supabase.from("activity_log").insert({ user_id: user.id, action: newValue ? "Locked student reports" : "Unlocked student reports", entity_type: "system_settings" });
+      }
+    }
+  };
 
   const fetchSessions = async () => {
     const { data } = await supabase.from("academic_sessions").select("*").order("academic_year", { ascending: false }).order("term");
@@ -87,9 +112,7 @@ const AdminSettings = () => {
 
         {/* Profile Section */}
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2"><User className="w-5 h-5" /> Personal Information</CardTitle>
-          </CardHeader>
+          <CardHeader><CardTitle className="flex items-center gap-2"><User className="w-5 h-5" /> Personal Information</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center gap-4 mb-4">
               <div className="w-16 h-16 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-2xl font-bold">
@@ -98,29 +121,37 @@ const AdminSettings = () => {
               <div>
                 <p className="font-bold text-foreground">{profile?.full_name || "Admin"}</p>
                 <p className="text-sm text-muted-foreground">{user?.email}</p>
-                <div className="flex items-center gap-1 mt-1">
-                  <Shield className="w-3 h-3 text-primary" />
-                  <span className="text-xs font-medium text-primary">Administrator</span>
-                </div>
+                <div className="flex items-center gap-1 mt-1"><Shield className="w-3 h-3 text-primary" /><span className="text-xs font-medium text-primary">Administrator</span></div>
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium text-foreground">Full Name</label>
-                <Input value={fullName} onChange={e => setFullName(e.target.value)} />
-              </div>
-              <div>
-                <label className="text-sm font-medium text-foreground">Email</label>
-                <Input value={user?.email || ""} disabled />
-              </div>
-              <div>
-                <label className="text-sm font-medium text-foreground">Phone</label>
-                <Input value={phone} onChange={e => setPhone(e.target.value)} placeholder="+263..." />
-              </div>
+              <div><label className="text-sm font-medium text-foreground">Full Name</label><Input value={fullName} onChange={e => setFullName(e.target.value)} /></div>
+              <div><label className="text-sm font-medium text-foreground">Email</label><Input value={user?.email || ""} disabled /></div>
+              <div><label className="text-sm font-medium text-foreground">Phone</label><Input value={phone} onChange={e => setPhone(e.target.value)} placeholder="+263..." /></div>
             </div>
-            <Button onClick={handleSaveProfile} disabled={saving}>
-              <Save className="w-4 h-4 mr-2" /> {saving ? "Saving..." : "Save Changes"}
-            </Button>
+            <Button onClick={handleSaveProfile} disabled={saving}><Save className="w-4 h-4 mr-2" /> {saving ? "Saving..." : "Save Changes"}</Button>
+          </CardContent>
+        </Card>
+
+        {/* Reports Lock Toggle */}
+        <Card className={`border-l-4 ${reportsLocked ? "border-l-red-500" : "border-l-green-500"}`}>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className={`p-3 rounded-lg ${reportsLocked ? "bg-red-500/10" : "bg-green-500/10"}`}>
+                  {reportsLocked ? <Lock className="w-6 h-6 text-red-600" /> : <Unlock className="w-6 h-6 text-green-600" />}
+                </div>
+                <div>
+                  <p className="font-bold text-foreground">Student Report Cards</p>
+                  <p className="text-sm text-muted-foreground">
+                    {reportsLocked
+                      ? "Reports are LOCKED — Students cannot view report cards. Unlock when teachers have finished entering grades."
+                      : "Reports are UNLOCKED — Students can view their report cards (if fees are cleared)."}
+                  </p>
+                </div>
+              </div>
+              <Switch checked={!reportsLocked} onCheckedChange={toggleReportsLock} />
+            </div>
           </CardContent>
         </Card>
 
@@ -146,10 +177,7 @@ const AdminSettings = () => {
           <CardContent className="p-0">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>Year</TableHead><TableHead>Term</TableHead><TableHead>Start</TableHead>
-                  <TableHead>End</TableHead><TableHead>Status</TableHead><TableHead>Actions</TableHead>
-                </TableRow>
+                <TableRow><TableHead>Year</TableHead><TableHead>Term</TableHead><TableHead>Start</TableHead><TableHead>End</TableHead><TableHead>Status</TableHead><TableHead>Actions</TableHead></TableRow>
               </TableHeader>
               <TableBody>
                 {sessions.map(s => (
@@ -159,20 +187,12 @@ const AdminSettings = () => {
                     <TableCell>{s.start_date}</TableCell>
                     <TableCell>{s.end_date}</TableCell>
                     <TableCell>
-                      {s.is_current ? (
-                        <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">Current</span>
-                      ) : <span className="text-xs text-muted-foreground">—</span>}
+                      {s.is_current ? <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">Current</span> : <span className="text-xs text-muted-foreground">—</span>}
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1">
-                        {!s.is_current && (
-                          <Button variant="outline" size="sm" onClick={() => handleSetCurrent(s.id)}>
-                            <CheckCircle className="w-4 h-4 mr-1" /> Set Current
-                          </Button>
-                        )}
-                        <Button variant="ghost" size="sm" onClick={() => { setEditSession({ ...s }); setEditOpen(true); }}>
-                          <Edit className="w-4 h-4" />
-                        </Button>
+                        {!s.is_current && <Button variant="outline" size="sm" onClick={() => handleSetCurrent(s.id)}><CheckCircle className="w-4 h-4 mr-1" /> Set Current</Button>}
+                        <Button variant="ghost" size="sm" onClick={() => { setEditSession({ ...s }); setEditOpen(true); }}><Edit className="w-4 h-4" /></Button>
                       </div>
                     </TableCell>
                   </TableRow>
