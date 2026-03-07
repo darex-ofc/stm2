@@ -135,8 +135,6 @@ const TeacherGrades = () => {
 
   // Derive unique subjects and classes for filters
   const uniqueSubjects = Array.from(new Map(assignments.map(a => [a.subject_id, a.subjects?.name || "Subject"])).entries());
-  const [selectedSubjectId, setSelectedSubjectId] = useState<string>("");
-  const [selectedClassId, setSelectedClassId] = useState<string>("");
 
   // Filter classes based on selected subject
   const classesForSubject = assignments.filter(a => !selectedSubjectId || a.subject_id === selectedSubjectId);
