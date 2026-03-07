@@ -30,6 +30,8 @@ import TeacherReports from "./pages/teacher/TeacherReports";
 import TeacherAnnouncements from "./pages/teacher/TeacherAnnouncements";
 import TeacherProfile from "./pages/teacher/TeacherProfile";
 import TeacherMonthlyTests from "./pages/teacher/TeacherMonthlyTests";
+import TeacherRankings from "./pages/teacher/TeacherRankings";
+import TeacherMessages from "./pages/teacher/TeacherMessages";
 
 // Student pages
 import StudentDashboard from "./pages/student/StudentDashboard";
@@ -40,6 +42,8 @@ import StudentAnnouncements from "./pages/student/StudentAnnouncements";
 import StudentFees from "./pages/student/StudentFees";
 import StudentProfile from "./pages/student/StudentProfile";
 import StudentStudyPal from "./pages/student/StudentStudyPal";
+import StudentRankings from "./pages/student/StudentRankings";
+import StudentMessages from "./pages/student/StudentMessages";
 
 // Admin pages
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -53,6 +57,15 @@ import AdminFees from "./pages/admin/AdminFees";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminApplications from "./pages/admin/AdminApplications";
 import AdminFinance from "./pages/admin/AdminFinance";
+import AdminRankings from "./pages/admin/AdminRankings";
+import AdminMessages from "./pages/admin/AdminMessages";
+
+// Parent pages
+import ParentDashboard from "./pages/parent/ParentDashboard";
+import ParentGrades from "./pages/parent/ParentGrades";
+import ParentAttendance from "./pages/parent/ParentAttendance";
+import ParentFees from "./pages/parent/ParentFees";
+import ParentMessages from "./pages/parent/ParentMessages";
 
 const queryClient = new QueryClient();
 
@@ -85,6 +98,8 @@ const App = () => (
               <Route path="/teacher/attendance" element={<ProtectedRoute allowedRoles={["teacher", "admin"]}><TeacherAttendance /></ProtectedRoute>} />
               <Route path="/teacher/reports" element={<ProtectedRoute allowedRoles={["teacher", "admin"]}><TeacherReports /></ProtectedRoute>} />
               <Route path="/teacher/monthly-tests" element={<ProtectedRoute allowedRoles={["teacher", "admin"]}><TeacherMonthlyTests /></ProtectedRoute>} />
+              <Route path="/teacher/rankings" element={<ProtectedRoute allowedRoles={["teacher", "admin"]}><TeacherRankings /></ProtectedRoute>} />
+              <Route path="/teacher/messages" element={<ProtectedRoute allowedRoles={["teacher", "admin"]}><TeacherMessages /></ProtectedRoute>} />
               <Route path="/teacher/announcements" element={<ProtectedRoute allowedRoles={["teacher", "admin"]}><TeacherAnnouncements /></ProtectedRoute>} />
               <Route path="/teacher/profile" element={<ProtectedRoute allowedRoles={["teacher", "admin"]}><TeacherProfile /></ProtectedRoute>} />
 
@@ -97,6 +112,8 @@ const App = () => (
               <Route path="/student/fees" element={<ProtectedRoute allowedRoles={["student"]}><StudentFees /></ProtectedRoute>} />
               <Route path="/student/profile" element={<ProtectedRoute allowedRoles={["student"]}><StudentProfile /></ProtectedRoute>} />
               <Route path="/student/study-pal" element={<ProtectedRoute allowedRoles={["student"]}><StudentStudyPal /></ProtectedRoute>} />
+              <Route path="/student/rankings" element={<ProtectedRoute allowedRoles={["student"]}><StudentRankings /></ProtectedRoute>} />
+              <Route path="/student/messages" element={<ProtectedRoute allowedRoles={["student"]}><StudentMessages /></ProtectedRoute>} />
 
               {/* Admin Portal */}
               <Route path="/admin" element={<ProtectedRoute allowedRoles={["admin"]}><AdminDashboard /></ProtectedRoute>} />
@@ -106,10 +123,19 @@ const App = () => (
               <Route path="/admin/subjects" element={<ProtectedRoute allowedRoles={["admin"]}><AdminSubjects /></ProtectedRoute>} />
               <Route path="/admin/codes" element={<ProtectedRoute allowedRoles={["admin"]}><AdminCodes /></ProtectedRoute>} />
               <Route path="/admin/grades" element={<ProtectedRoute allowedRoles={["admin"]}><AdminGrades /></ProtectedRoute>} />
+              <Route path="/admin/rankings" element={<ProtectedRoute allowedRoles={["admin"]}><AdminRankings /></ProtectedRoute>} />
+              <Route path="/admin/messages" element={<ProtectedRoute allowedRoles={["admin"]}><AdminMessages /></ProtectedRoute>} />
               <Route path="/admin/announcements" element={<ProtectedRoute allowedRoles={["admin"]}><AdminAnnouncements /></ProtectedRoute>} />
               <Route path="/admin/fees" element={<ProtectedRoute allowedRoles={["admin"]}><AdminFees /></ProtectedRoute>} />
               <Route path="/admin/settings" element={<ProtectedRoute allowedRoles={["admin"]}><AdminSettings /></ProtectedRoute>} />
               <Route path="/admin/finance" element={<ProtectedRoute allowedRoles={["admin"]}><AdminFinance /></ProtectedRoute>} />
+
+              {/* Parent Portal */}
+              <Route path="/parent" element={<ProtectedRoute allowedRoles={["parent"]}><ParentDashboard /></ProtectedRoute>} />
+              <Route path="/parent/grades" element={<ProtectedRoute allowedRoles={["parent"]}><ParentGrades /></ProtectedRoute>} />
+              <Route path="/parent/attendance" element={<ProtectedRoute allowedRoles={["parent"]}><ParentAttendance /></ProtectedRoute>} />
+              <Route path="/parent/fees" element={<ProtectedRoute allowedRoles={["parent"]}><ParentFees /></ProtectedRoute>} />
+              <Route path="/parent/messages" element={<ProtectedRoute allowedRoles={["parent"]}><ParentMessages /></ProtectedRoute>} />
 
               <Route path="*" element={<NotFound />} />
             </Routes>
