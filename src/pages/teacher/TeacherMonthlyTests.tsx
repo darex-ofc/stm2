@@ -74,7 +74,7 @@ const TeacherMonthlyTests = () => {
         const highest = ms.reduce((a, b) => a.mark > b.mark ? a : b);
         const lowest = ms.reduce((a, b) => a.mark < b.mark ? a : b);
         const avg = Math.round(ms.reduce((a, b) => a + b.mark, 0) / ms.length);
-        const getName = (sid: string) => studentData.find(s => s.user_id === sid)?.profiles?.full_name || "Unknown";
+        const getName = (sid: string) => enrichedStudents.find(s => s.user_id === sid)?.profiles?.full_name || "Unknown";
         setStats({
           highest: highest.mark, lowest: lowest.mark, average: avg, total: ms.length,
           highestName: getName(highest.studentId), lowestName: getName(lowest.studentId)
