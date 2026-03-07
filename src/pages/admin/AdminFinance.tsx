@@ -170,7 +170,7 @@ const AdminFinance = () => {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Date</TableHead><TableHead>Description</TableHead><TableHead>Category</TableHead>
-                      <TableHead>Amount</TableHead><TableHead>Method</TableHead><TableHead>Ref</TableHead>
+                      <TableHead>Amount</TableHead><TableHead>Method</TableHead><TableHead>Ref</TableHead><TableHead>Proof</TableHead>
                       <TableHead>Recorded By</TableHead><TableHead></TableHead>
                     </TableRow>
                   </TableHeader>
