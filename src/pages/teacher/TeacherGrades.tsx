@@ -220,6 +220,21 @@ const TeacherGrades = () => {
                     <BookOpen className="w-5 h-5" /> {selectedAssignment.subjects?.name} — {selectedAssignment.classes?.name}
                   </CardTitle>
                   <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={() => {
+                      const count = exportCSV(
+                        `grades_${selectedAssignment.subjects?.name}_${selectedAssignment.classes?.name}`,
+                        ["#", "Student", "Mark", "Grade", "Comment"],
+                        students.map((s, i) => {
+                          const existing = existingGrades.find(g => g.student_id === s.user_id);
+                          const mark = grades[s.user_id]?.mark || existing?.mark || "";
+                          const grade = mark ? getGrade(Number(mark), gradingScales) : "";
+                          return [i + 1, s.profiles?.full_name || "Student", mark, grade, grades[s.user_id]?.comment || existing?.comment || ""];
+                        })
+                      );
+                      toast({ title: "Exported", description: `${count} student grades exported.` });
+                    }}>
+                      <FileDown className="w-4 h-4 mr-1" /> Export
+                    </Button>
                     <Button variant="outline" size="sm" onClick={() => setShowDeleted(!showDeleted)}>
                       <RotateCcw className="w-4 h-4 mr-1" /> Deleted ({deletedGrades.length})
                     </Button>
