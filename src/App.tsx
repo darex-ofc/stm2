@@ -112,6 +112,8 @@ const App = () => (
               <Route path="/student/fees" element={<ProtectedRoute allowedRoles={["student"]}><StudentFees /></ProtectedRoute>} />
               <Route path="/student/profile" element={<ProtectedRoute allowedRoles={["student"]}><StudentProfile /></ProtectedRoute>} />
               <Route path="/student/study-pal" element={<ProtectedRoute allowedRoles={["student"]}><StudentStudyPal /></ProtectedRoute>} />
+              <Route path="/student/rankings" element={<ProtectedRoute allowedRoles={["student"]}><StudentRankings /></ProtectedRoute>} />
+              <Route path="/student/messages" element={<ProtectedRoute allowedRoles={["student"]}><StudentMessages /></ProtectedRoute>} />
 
               {/* Admin Portal */}
               <Route path="/admin" element={<ProtectedRoute allowedRoles={["admin"]}><AdminDashboard /></ProtectedRoute>} />
@@ -121,10 +123,19 @@ const App = () => (
               <Route path="/admin/subjects" element={<ProtectedRoute allowedRoles={["admin"]}><AdminSubjects /></ProtectedRoute>} />
               <Route path="/admin/codes" element={<ProtectedRoute allowedRoles={["admin"]}><AdminCodes /></ProtectedRoute>} />
               <Route path="/admin/grades" element={<ProtectedRoute allowedRoles={["admin"]}><AdminGrades /></ProtectedRoute>} />
+              <Route path="/admin/rankings" element={<ProtectedRoute allowedRoles={["admin"]}><AdminRankings /></ProtectedRoute>} />
+              <Route path="/admin/messages" element={<ProtectedRoute allowedRoles={["admin"]}><AdminMessages /></ProtectedRoute>} />
               <Route path="/admin/announcements" element={<ProtectedRoute allowedRoles={["admin"]}><AdminAnnouncements /></ProtectedRoute>} />
               <Route path="/admin/fees" element={<ProtectedRoute allowedRoles={["admin"]}><AdminFees /></ProtectedRoute>} />
               <Route path="/admin/settings" element={<ProtectedRoute allowedRoles={["admin"]}><AdminSettings /></ProtectedRoute>} />
               <Route path="/admin/finance" element={<ProtectedRoute allowedRoles={["admin"]}><AdminFinance /></ProtectedRoute>} />
+
+              {/* Parent Portal */}
+              <Route path="/parent" element={<ProtectedRoute allowedRoles={["parent"]}><ParentDashboard /></ProtectedRoute>} />
+              <Route path="/parent/grades" element={<ProtectedRoute allowedRoles={["parent"]}><ParentGrades /></ProtectedRoute>} />
+              <Route path="/parent/attendance" element={<ProtectedRoute allowedRoles={["parent"]}><ParentAttendance /></ProtectedRoute>} />
+              <Route path="/parent/fees" element={<ProtectedRoute allowedRoles={["parent"]}><ParentFees /></ProtectedRoute>} />
+              <Route path="/parent/messages" element={<ProtectedRoute allowedRoles={["parent"]}><ParentMessages /></ProtectedRoute>} />
 
               <Route path="*" element={<NotFound />} />
             </Routes>
