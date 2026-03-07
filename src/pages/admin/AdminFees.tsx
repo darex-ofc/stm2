@@ -125,7 +125,11 @@ const AdminFees = () => {
 
   // Master student lookup
   const masterFilteredStudents = masterSearch.length >= 2
-    ? students.filter(s => s.full_name.toLowerCase().includes(masterSearch.toLowerCase()) || s.email?.toLowerCase().includes(masterSearch.toLowerCase()))
+    ? students.filter(s => {
+        const q = masterSearch.toLowerCase();
+        const sp = studentProfiles.find(p => p.user_id === s.user_id);
+        return s.full_name.toLowerCase().includes(q) || s.email?.toLowerCase().includes(q) || (sp?.student_id || "").toLowerCase().includes(q);
+      })
     : [];
 
   const openStudentLookup = async (student: any) => {
