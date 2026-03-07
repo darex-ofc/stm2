@@ -2,21 +2,14 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import DashboardLayout from "@/components/DashboardLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableHeader, TableHead, TableBody, TableRow, TableCell } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { FileText, Search, CheckCircle, XCircle, Clock, Eye, Copy } from "lucide-react";
+import { FileText, Search, CheckCircle, XCircle, Clock, Eye, Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-
-const generateCode = () => {
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  let code = "STM-";
-  for (let i = 0; i < 8; i++) code += chars[Math.floor(Math.random() * chars.length)];
-  return code;
-};
 
 const AdminApplications = () => {
   const { user } = useAuth();
@@ -26,39 +19,76 @@ const AdminApplications = () => {
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<any>(null);
   const [detailOpen, setDetailOpen] = useState(false);
-  const [generatedCode, setGeneratedCode] = useState<string | null>(null);
+  const [approving, setApproving] = useState(false);
+  const [classes, setClasses] = useState<any[]>([]);
+  const [selectedClass, setSelectedClass] = useState("");
 
   const fetchData = async () => {
     setLoading(true);
-    const { data } = await supabase.from("applications").select("*").order("created_at", { ascending: false });
-    setApplications(data || []);
+    const [{ data: apps }, { data: cls }] = await Promise.all([
+      supabase.from("applications").select("*").order("created_at", { ascending: false }),
+      supabase.from("classes").select("*").is("deleted_at", null).order("form").order("name"),
+    ]);
+    setApplications(apps || []);
+    setClasses(cls || []);
     setLoading(false);
   };
 
   useEffect(() => { fetchData(); }, []);
 
+  const getFilteredClasses = (app: any) => {
+    if (!app) return [];
+    return classes.filter(c => c.level === app.level && c.form === app.form);
+  };
+
   const updateStatus = async (id: string, status: string) => {
     const app = applications.find(a => a.id === id);
 
     if (status === "approved" && app) {
-      // Generate a student access code for the applicant
-      const code = generateCode();
-      const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + 30); // 30-day expiry
-
-      const { error: codeError } = await supabase.from("access_codes").insert({
-        code,
-        role: "student" as any,
-        created_by: user?.id,
-        expires_at: expiresAt.toISOString(),
-      });
-
-      if (codeError) {
-        toast({ title: "Error", description: "Failed to generate access code: " + codeError.message, variant: "destructive" });
+      if (!app.user_id) {
+        toast({ title: "Error", description: "This application has no linked account. The student needs to re-apply via the Request Access form.", variant: "destructive" });
         return;
       }
 
-      setGeneratedCode(code);
+      setApproving(true);
+
+      // Insert user role
+      const { error: roleError } = await supabase.from("user_roles").insert({
+        user_id: app.user_id,
+        role: "student" as any,
+      });
+
+      if (roleError) {
+        toast({ title: "Error", description: "Failed to assign role: " + roleError.message, variant: "destructive" });
+        setApproving(false);
+        return;
+      }
+
+      // Create student profile
+      const { error: profileError } = await supabase.from("student_profiles").insert({
+        user_id: app.user_id,
+        level: app.level,
+        form: app.form,
+        class_id: selectedClass || null,
+        date_of_birth: app.date_of_birth || null,
+        guardian_name: app.guardian_name || null,
+        guardian_phone: app.guardian_phone || null,
+        guardian_email: app.guardian_email || null,
+        address: app.address || null,
+      });
+
+      if (profileError) {
+        toast({ title: "Error", description: "Failed to create student profile: " + profileError.message, variant: "destructive" });
+        setApproving(false);
+        return;
+      }
+
+      // Update profile phone if available
+      if (app.phone) {
+        await supabase.from("profiles").update({ phone: app.phone }).eq("user_id", app.user_id);
+      }
+
+      setApproving(false);
     }
 
     const { error } = await supabase.from("applications").update({
@@ -70,9 +100,14 @@ const AdminApplications = () => {
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {
-      toast({ title: `Application ${status}`, description: status === "approved" ? "An access code has been generated." : undefined });
+      toast({
+        title: `Application ${status}`,
+        description: status === "approved"
+          ? `${app?.full_name}'s account has been activated. They can now log in.`
+          : undefined,
+      });
       fetchData();
-      if (status !== "approved") setDetailOpen(false);
+      setDetailOpen(false);
     }
   };
 
@@ -106,13 +141,6 @@ const AdminApplications = () => {
     rejected: applications.filter(a => a.status === "rejected").length,
   };
 
-  const copyCode = () => {
-    if (generatedCode) {
-      navigator.clipboard.writeText(generatedCode);
-      toast({ title: "Copied!", description: "Access code copied to clipboard." });
-    }
-  };
-
   const AppTable = ({ data }: { data: any[] }) => (
     <Table>
       <TableHeader>
@@ -142,12 +170,12 @@ const AdminApplications = () => {
               <TableCell className="text-sm text-muted-foreground">{new Date(a.created_at).toLocaleDateString()}</TableCell>
               <TableCell>
                 <div className="flex gap-1">
-                  <Button variant="ghost" size="sm" onClick={() => { setSelected(a); setDetailOpen(true); setGeneratedCode(null); }}>
+                  <Button variant="ghost" size="sm" onClick={() => { setSelected(a); setDetailOpen(true); setSelectedClass(""); }}>
                     <Eye className="w-4 h-4" />
                   </Button>
                   {a.status === "pending" && (
                     <>
-                      <Button variant="ghost" size="sm" onClick={() => updateStatus(a.id, "approved")}>
+                      <Button variant="ghost" size="sm" onClick={() => { setSelected(a); setDetailOpen(true); setSelectedClass(""); }}>
                         <CheckCircle className="w-4 h-4 text-green-600" />
                       </Button>
                       <Button variant="ghost" size="sm" onClick={() => updateStatus(a.id, "rejected")}>
@@ -207,7 +235,7 @@ const AdminApplications = () => {
         </Tabs>
 
         {/* Detail Dialog */}
-        <Dialog open={detailOpen} onOpenChange={(open) => { setDetailOpen(open); if (!open) setGeneratedCode(null); }}>
+        <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
           <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader><DialogTitle>Application Details</DialogTitle></DialogHeader>
             {selected && (
@@ -230,30 +258,38 @@ const AdminApplications = () => {
                   <div className="col-span-2"><span className="text-muted-foreground">Notes:</span> {selected.notes || "—"}</div>
                   <div><span className="text-muted-foreground">Applied:</span> {new Date(selected.created_at).toLocaleString()}</div>
                   {selected.reviewed_at && <div><span className="text-muted-foreground">Reviewed:</span> {new Date(selected.reviewed_at).toLocaleString()}</div>}
+                  <div><span className="text-muted-foreground">Account:</span> {selected.user_id ? "✅ Created" : "❌ No account"}</div>
                 </div>
 
-                {/* Generated Access Code Display */}
-                {generatedCode && (
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                    <p className="text-sm font-medium text-green-800 mb-2">✅ Access Code Generated for this applicant:</p>
-                    <div className="flex items-center gap-2">
-                      <code className="bg-white px-4 py-2 rounded border text-lg font-mono font-bold text-green-700 flex-1 text-center">{generatedCode}</code>
-                      <Button variant="outline" size="sm" onClick={copyCode}>
-                        <Copy className="w-4 h-4" />
+                {selected.status === "pending" && (
+                  <div className="space-y-4 border-t border-border pt-4">
+                    <div>
+                      <label className="text-sm font-medium text-foreground">Assign to Class (optional)</label>
+                      <select
+                        className="w-full border border-input rounded-lg px-3 py-2 bg-background text-sm mt-1"
+                        value={selectedClass}
+                        onChange={e => setSelectedClass(e.target.value)}
+                      >
+                        <option value="">Select class...</option>
+                        {getFilteredClasses(selected).map(c => (
+                          <option key={c.id} value={c.id}>{c.name}{c.stream ? ` (${c.stream})` : ""}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="flex gap-3">
+                      <Button className="flex-1" onClick={() => updateStatus(selected.id, "approved")} disabled={approving}>
+                        {approving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Approving...</> : <><CheckCircle className="w-4 h-4 mr-2" /> Approve & Activate Account</>}
+                      </Button>
+                      <Button variant="destructive" className="flex-1" onClick={() => updateStatus(selected.id, "rejected")} disabled={approving}>
+                        <XCircle className="w-4 h-4 mr-2" /> Reject
                       </Button>
                     </div>
-                    <p className="text-xs text-green-600 mt-2">Share this code with {selected.full_name} ({selected.email}) so they can complete registration. Expires in 30 days.</p>
                   </div>
                 )}
 
-                {selected.status === "pending" && !generatedCode && (
-                  <div className="flex gap-3 pt-2">
-                    <Button className="flex-1" onClick={() => updateStatus(selected.id, "approved")}>
-                      <CheckCircle className="w-4 h-4 mr-2" /> Approve & Generate Code
-                    </Button>
-                    <Button variant="destructive" className="flex-1" onClick={() => updateStatus(selected.id, "rejected")}>
-                      <XCircle className="w-4 h-4 mr-2" /> Reject
-                    </Button>
+                {selected.status === "approved" && (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <p className="text-sm text-green-800">✅ This student's account has been activated. They can log in with their email and password.</p>
                   </div>
                 )}
               </div>

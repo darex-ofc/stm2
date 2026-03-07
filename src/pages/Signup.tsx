@@ -28,7 +28,6 @@ const Signup = () => {
   const [selectedClass, setSelectedClass] = useState("");
   const [selectedLevel, setSelectedLevel] = useState("o_level");
   const [selectedForm, setSelectedForm] = useState("1");
-  // Student personal info
   const [phone, setPhone] = useState("");
   const [dateOfBirth, setDateOfBirth] = useState("");
   const [guardianName, setGuardianName] = useState("");
@@ -37,8 +36,6 @@ const Signup = () => {
   const [address, setAddress] = useState("");
   const [previousSchool, setPreviousSchool] = useState("");
   const [nationalId, setNationalId] = useState("");
-  const [birthCertNumber, setBirthCertNumber] = useState("");
-  // Request access state
   const [requestSubmitted, setRequestSubmitted] = useState(false);
   const [requestLoading, setRequestLoading] = useState(false);
   const [notes, setNotes] = useState("");
@@ -107,9 +104,7 @@ const Signup = () => {
         guardian_email: guardianEmail || null,
         address: address || null,
         national_id: nationalId || null,
-        birth_cert_number: birthCertNumber || null,
       });
-      // Update profile with phone
       if (phone) {
         await supabase.from("profiles").update({ phone }).eq("user_id", authData.user.id);
       }
@@ -122,11 +117,29 @@ const Signup = () => {
 
   const handleRequestAccess = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!fullName || !email) {
-      toast({ title: "Required Fields", description: "Please fill in your full name and email.", variant: "destructive" });
+    if (!fullName || !email || !password) {
+      toast({ title: "Required Fields", description: "Please fill in your full name, email, and password.", variant: "destructive" });
+      return;
+    }
+    if (password.length < 6) {
+      toast({ title: "Weak Password", description: "Password must be at least 6 characters.", variant: "destructive" });
       return;
     }
     setRequestLoading(true);
+
+    // Create the auth account immediately
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email, password,
+      options: { data: { full_name: fullName } },
+    });
+
+    if (authError || !authData.user) {
+      toast({ title: "Signup Failed", description: authError?.message || "Could not create account.", variant: "destructive" });
+      setRequestLoading(false);
+      return;
+    }
+
+    // Submit application with user_id linked
     const { error } = await supabase.from("applications").insert({
       full_name: fullName,
       email,
@@ -140,13 +153,18 @@ const Signup = () => {
       address: address || null,
       previous_school: previousSchool || null,
       notes: notes || null,
+      user_id: authData.user.id,
     });
+
+    // Sign out since they can't access anything yet (no role)
+    await supabase.auth.signOut();
+
     setRequestLoading(false);
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {
       setRequestSubmitted(true);
-      toast({ title: "Request Submitted!", description: "An admin will review your request. You'll receive an access code once approved." });
+      toast({ title: "Request Submitted!", description: "Your account has been created. You'll be able to log in once an admin approves your request." });
     }
   };
 
@@ -178,15 +196,9 @@ const Signup = () => {
           </select>
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="text-sm font-medium text-foreground">National ID</label>
-          <Input placeholder="e.g. 63-123456A78" value={nationalId} onChange={e => setNationalId(e.target.value)} />
-        </div>
-        <div>
-          <label className="text-sm font-medium text-foreground">Birth Certificate No.</label>
-          <Input placeholder="Birth cert number" value={birthCertNumber} onChange={e => setBirthCertNumber(e.target.value)} />
-        </div>
+      <div>
+        <label className="text-sm font-medium text-foreground">National ID / Birth Certificate No.</label>
+        <Input placeholder="e.g. 63-123456A78" value={nationalId} onChange={e => setNationalId(e.target.value)} />
       </div>
       <div>
         <label className="text-sm font-medium text-foreground">Home Address</label>
@@ -219,10 +231,10 @@ const Signup = () => {
           <CardContent>
             <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
             <h2 className="font-display text-2xl font-bold text-foreground mb-2">Request Submitted!</h2>
-            <p className="text-muted-foreground mb-6">Your access request has been sent to the administration. Once approved, you'll receive an access code via email to complete your registration.</p>
+            <p className="text-muted-foreground mb-4">Your account has been created and your access request has been sent to the administration for review.</p>
+            <p className="text-sm text-muted-foreground mb-6">Once approved, you'll be able to log in with your email and password — no access code needed!</p>
             <div className="space-y-3">
-              <Button onClick={() => { setRequestSubmitted(false); setSelectedRole(null); }} variant="outline" className="w-full">Submit Another Request</Button>
-              <Link to="/login" className="text-sm text-primary hover:underline block">Already have an account? Sign in</Link>
+              <Link to="/login" className="text-sm text-primary hover:underline block">Go to Login</Link>
               <Link to="/" className="text-sm text-muted-foreground hover:underline block">← Back to website</Link>
             </div>
           </CardContent>
@@ -287,7 +299,6 @@ const Signup = () => {
                       <TabsTrigger value="request" className="flex-1">Request Access</TabsTrigger>
                     </TabsList>
 
-                    {/* WITH ACCESS CODE */}
                     <TabsContent value="with-code">
                       <form onSubmit={handleSignup} className="space-y-4">
                         <div>
@@ -321,11 +332,10 @@ const Signup = () => {
                       </form>
                     </TabsContent>
 
-                    {/* REQUEST ACCESS */}
                     <TabsContent value="request">
                       <form onSubmit={handleRequestAccess} className="space-y-4">
                         <p className="text-sm text-muted-foreground bg-muted p-3 rounded-lg">
-                          Don't have an access code? Submit your details for admin approval. Once approved, you'll receive a code to complete registration.
+                          Don't have an access code? Submit your details for admin approval. Once approved, you can log in immediately — no code needed.
                         </p>
                         <div>
                           <label className="text-sm font-medium text-foreground">Full Name *</label>
@@ -334,6 +344,10 @@ const Signup = () => {
                         <div>
                           <label className="text-sm font-medium text-foreground">Email *</label>
                           <Input type="email" placeholder="your.email@example.com" value={email} onChange={e => setEmail(e.target.value)} required />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-foreground">Password *</label>
+                          <Input type="password" placeholder="Minimum 6 characters" value={password} onChange={e => setPassword(e.target.value)} required minLength={6} />
                         </div>
                         <StudentPersonalFields />
                         <div>
@@ -345,7 +359,7 @@ const Signup = () => {
                           <textarea placeholder="Any additional information..." value={notes} onChange={e => setNotes(e.target.value)} rows={3} className="w-full border border-input rounded-lg px-3 py-2 bg-background text-sm resize-none" />
                         </div>
                         <Button type="submit" className="w-full" disabled={requestLoading}>
-                          {requestLoading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Submitting...</> : <><Send className="w-4 h-4 mr-2" /> Request Access</>}
+                          {requestLoading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Creating account...</> : <><Send className="w-4 h-4 mr-2" /> Submit & Create Account</>}
                         </Button>
                       </form>
                     </TabsContent>
@@ -356,7 +370,6 @@ const Signup = () => {
                 </CardContent>
               </Card>
             ) : (
-              /* TEACHER / ADMIN - same as before */
               <Card className={`shadow-card border-2 ${roleConfig[selectedRole].bgColor}`}>
                 <CardHeader className="pb-4">
                   <div className="flex items-center gap-3">
