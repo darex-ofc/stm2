@@ -52,7 +52,9 @@ export type Database = {
           deleted_at: string | null
           expires_at: string | null
           id: string
+          max_uses: number | null
           role: Database["public"]["Enums"]["app_role"]
+          use_count: number
           used: boolean
           used_by: string | null
         }
@@ -63,7 +65,9 @@ export type Database = {
           deleted_at?: string | null
           expires_at?: string | null
           id?: string
+          max_uses?: number | null
           role: Database["public"]["Enums"]["app_role"]
+          use_count?: number
           used?: boolean
           used_by?: string | null
         }
@@ -74,7 +78,9 @@ export type Database = {
           deleted_at?: string | null
           expires_at?: string | null
           id?: string
+          max_uses?: number | null
           role?: Database["public"]["Enums"]["app_role"]
+          use_count?: number
           used?: boolean
           used_by?: string | null
         }
