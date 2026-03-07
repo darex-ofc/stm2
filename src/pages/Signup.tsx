@@ -200,7 +200,7 @@ const Signup = () => {
                         <div>
                           <label className="text-sm font-medium text-foreground">Form</label>
                           <select className="w-full border border-input rounded-lg px-3 py-2 bg-background text-sm" value={selectedForm} onChange={e => { setSelectedForm(e.target.value); setSelectedClass(""); }}>
-                            {[1, 2, 3, 4, 5, 6].map(f => <option key={f} value={f}>Form {f}</option>)}
+                            {(selectedLevel === "zjc" ? [1, 2] : selectedLevel === "o_level" ? [1, 2, 3, 4] : [5, 6]).map(f => <option key={f} value={f}>Form {f}</option>)}
                           </select>
                         </div>
                       </div>
