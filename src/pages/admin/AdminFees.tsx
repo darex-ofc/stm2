@@ -471,6 +471,13 @@ const AdminFees = () => {
             )}
           </DialogContent>
         </Dialog>
+        <BarcodeScanner
+          open={scannerOpen}
+          onOpenChange={setScannerOpen}
+          students={students}
+          studentProfiles={studentProfiles}
+          classes={classes}
+        />
       </div>
     </DashboardLayout>
   );
