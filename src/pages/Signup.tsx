@@ -30,6 +30,8 @@ const Signup = () => {
   const [selectedLevel, setSelectedLevel] = useState("o_level");
   const [selectedForm, setSelectedForm] = useState("1");
   const [phone, setPhone] = useState("");
+  const [childStudentId, setChildStudentId] = useState("");
+  const [childLookupResult, setChildLookupResult] = useState<string | null>(null);
   const [dateOfBirth, setDateOfBirth] = useState("");
   const [guardianName, setGuardianName] = useState("");
   const [guardianPhone, setGuardianPhone] = useState("");
@@ -118,6 +120,22 @@ const Signup = () => {
         address: address || null,
         national_id: nationalId || null,
       });
+      if (phone) {
+        await supabase.from("profiles").update({ phone }).eq("user_id", authData.user.id);
+      }
+    } else if (codeData.role === "parent" && childStudentId.trim()) {
+      // Look up student by student_id and link
+      const { data: studentProfile } = await supabase
+        .from("student_profiles")
+        .select("user_id")
+        .eq("student_id", childStudentId.trim())
+        .single();
+      if (studentProfile) {
+        await supabase.from("parent_student_links").insert({
+          parent_id: authData.user.id,
+          student_id: studentProfile.user_id,
+        });
+      }
       if (phone) {
         await supabase.from("profiles").update({ phone }).eq("user_id", authData.user.id);
       }
