@@ -6,7 +6,7 @@ import ThemeToggle from "@/components/ThemeToggle";
 import {
   Menu, X, LogOut, Home, Users, BookOpen, ClipboardCheck,
   FileText, Bell, Settings, BarChart3, Key, GraduationCap,
-  DollarSign, User
+  DollarSign, User, Receipt
 } from "lucide-react";
 import schoolLogo from "@/assets/school-logo.png";
 
@@ -48,6 +48,7 @@ const adminNav: NavItem[] = [
   { label: "Grades Overview", path: "/admin/grades", icon: BarChart3 },
   { label: "Announcements", path: "/admin/announcements", icon: Bell },
   { label: "Fee Management", path: "/admin/fees", icon: DollarSign },
+  { label: "Finance & Petty Cash", path: "/admin/finance", icon: Receipt },
   { label: "Settings", path: "/admin/settings", icon: Settings },
 ];
 
