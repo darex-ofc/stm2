@@ -159,12 +159,19 @@ const Signup = () => {
     // Sign out since they can't access anything yet (no role)
     await supabase.auth.signOut();
 
+    // Send confirmation email
+    try {
+      await supabase.functions.invoke("send-notification", {
+        body: { type: "request_received", email, full_name: fullName },
+      });
+    } catch (e) { console.error("Email notification failed:", e); }
+
     setRequestLoading(false);
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {
       setRequestSubmitted(true);
-      toast({ title: "Request Submitted!", description: "Your account has been created. You'll be able to log in once an admin approves your request." });
+      toast({ title: "Request Submitted!", description: "Your account has been created. You'll receive an email and can log in once approved." });
     }
   };
 
