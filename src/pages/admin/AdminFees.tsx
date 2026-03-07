@@ -284,6 +284,7 @@ const AdminFees = () => {
           <TabsList>
             <TabsTrigger value="active">Records ({filtered.length})</TabsTrigger>
             <TabsTrigger value="deleted">Deleted ({deletedFees.length})</TabsTrigger>
+            <TabsTrigger value="scholarships">Scholarships ({activeScholarships.length})</TabsTrigger>
           </TabsList>
 
           <TabsContent value="active">
@@ -318,6 +319,121 @@ const AdminFees = () => {
                 </Table>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="scholarships">
+            <div className="space-y-4">
+              {/* Add Scholarship Form */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-lg"><GraduationCap className="w-5 h-5" /> Add Scholarship / Organization Sponsorship</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div>
+                      <label className="text-xs text-muted-foreground">Student</label>
+                      <select className="w-full border border-input rounded-lg px-3 py-2 bg-background text-sm" value={scholarshipForm.student_id} onChange={e => setScholarshipForm({ ...scholarshipForm, student_id: e.target.value })}>
+                        <option value="">Select Student...</option>
+                        {students.map(s => <option key={s.user_id} value={s.user_id}>{s.full_name}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground">Organization</label>
+                      <Input placeholder="e.g. BEAM, CAMFED, HIGHERLIFE..." value={scholarshipForm.organization_name} onChange={e => setScholarshipForm({ ...scholarshipForm, organization_name: e.target.value })} />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground">Coverage</label>
+                      <select className="w-full border border-input rounded-lg px-3 py-2 bg-background text-sm" value={scholarshipForm.coverage_type} onChange={e => setScholarshipForm({ ...scholarshipForm, coverage_type: e.target.value, coverage_percentage: e.target.value === "full" ? "100" : scholarshipForm.coverage_percentage })}>
+                        <option value="full">Full (100%)</option>
+                        <option value="partial">Partial</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    {scholarshipForm.coverage_type === "partial" && (
+                      <div>
+                        <label className="text-xs text-muted-foreground">Coverage %</label>
+                        <Input type="number" min="1" max="99" value={scholarshipForm.coverage_percentage} onChange={e => setScholarshipForm({ ...scholarshipForm, coverage_percentage: e.target.value })} />
+                      </div>
+                    )}
+                    <div>
+                      <label className="text-xs text-muted-foreground">End Date (auto-expires)</label>
+                      <Input type="date" value={scholarshipForm.end_date} onChange={e => setScholarshipForm({ ...scholarshipForm, end_date: e.target.value })} />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground">Notes</label>
+                      <Input placeholder="Optional notes..." value={scholarshipForm.notes} onChange={e => setScholarshipForm({ ...scholarshipForm, notes: e.target.value })} />
+                    </div>
+                  </div>
+                  <Button onClick={handleAddScholarship}><Plus className="w-4 h-4 mr-1" /> Add Scholarship</Button>
+                </CardContent>
+              </Card>
+
+              {/* Scholarships Table */}
+              <Card>
+                <CardContent className="p-0">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Student</TableHead>
+                        <TableHead>Organization</TableHead>
+                        <TableHead>Coverage</TableHead>
+                        <TableHead>Period</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {scholarships.length === 0 ? (
+                        <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No scholarships configured.</TableCell></TableRow>
+                      ) : scholarships.map(s => {
+                        const isExpired = s.end_date && new Date(s.end_date) < new Date();
+                        return (
+                          <TableRow key={s.id} className={!s.is_active ? "opacity-50" : ""}>
+                            <TableCell className="font-medium">{getStudentName(s.student_id)}</TableCell>
+                            <TableCell>
+                              <span className="px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">{s.organization_name}</span>
+                            </TableCell>
+                            <TableCell>
+                              {s.coverage_type === "full" ? (
+                                <span className="text-green-600 font-bold">100%</span>
+                              ) : (
+                                <span className="font-bold">{s.coverage_percentage}%</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-sm">
+                              <div>{new Date(s.start_date).toLocaleDateString()}</div>
+                              {s.end_date && (
+                                <div className={`text-xs ${isExpired ? "text-destructive" : "text-muted-foreground"}`}>
+                                  <Calendar className="w-3 h-3 inline mr-1" />
+                                  {isExpired ? "Expired" : "Ends"}: {new Date(s.end_date).toLocaleDateString()}
+                                </div>
+                              )}
+                              {!s.end_date && <div className="text-xs text-muted-foreground">No end date</div>}
+                            </TableCell>
+                            <TableCell>
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${s.is_active && !isExpired ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+                                {s.is_active && !isExpired ? "Active" : isExpired ? "Expired" : "Inactive"}
+                              </span>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex gap-1">
+                                <Button variant="ghost" size="sm" onClick={() => handleToggleScholarship(s.id, s.is_active)}>
+                                  {s.is_active ? "Deactivate" : "Activate"}
+                                </Button>
+                                <Button variant="ghost" size="sm" onClick={() => handleDeleteScholarship(s.id)}>
+                                  <Trash2 className="w-4 h-4 text-destructive" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
         </Tabs>
 
