@@ -28,6 +28,8 @@ const TeacherGrades = () => {
   const [editComment, setEditComment] = useState("");
   const [stats, setStats] = useState({ highest: 0, lowest: 0, average: 0 });
   const [distribution, setDistribution] = useState<any[]>([]);
+  const [selectedSubjectId, setSelectedSubjectId] = useState<string>("");
+  const [selectedClassId, setSelectedClassId] = useState<string>("");
 
   useEffect(() => {
     if (!user) return;
@@ -131,28 +133,62 @@ const TeacherGrades = () => {
     return "text-red-600 bg-red-500/10";
   };
 
+  // Derive unique subjects and classes for filters
+  const uniqueSubjects = Array.from(new Map(assignments.map(a => [a.subject_id, a.subjects?.name || "Subject"])).entries());
+
+  // Filter classes based on selected subject
+  const classesForSubject = assignments.filter(a => !selectedSubjectId || a.subject_id === selectedSubjectId);
+  const uniqueClasses = Array.from(new Map(classesForSubject.map(a => [a.class_id, a.classes?.name || "Class"])).entries());
+
+  // Auto-select assignment when both subject and class are picked
+  useEffect(() => {
+    if (selectedSubjectId && selectedClassId) {
+      const match = assignments.find(a => a.subject_id === selectedSubjectId && a.class_id === selectedClassId);
+      if (match) setSelectedAssignment(match);
+    }
+  }, [selectedSubjectId, selectedClassId, assignments]);
+
   return (
     <DashboardLayout role="teacher">
       <div className="space-y-6">
         <h1 className="font-display text-2xl font-bold text-foreground">Set Grades</h1>
 
-        <div className="flex flex-wrap gap-4">
-          <select className="border border-input rounded-lg px-3 py-2 bg-background text-foreground text-sm" value={term} onChange={e => setTerm(e.target.value)}>
-            <option value="term_1">Term 1</option><option value="term_2">Term 2</option><option value="term_3">Term 3</option>
-          </select>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-          {assignments.map((a) => (
-            <Card key={a.id} className={`cursor-pointer transition-all hover:shadow-md ${selectedAssignment?.id === a.id ? "ring-2 ring-primary" : ""}`} onClick={() => setSelectedAssignment(a)}>
-              <CardContent className="p-4">
-                <p className="font-bold text-foreground">{a.subjects?.name || "Subject"}</p>
-                <p className="text-sm text-muted-foreground">{a.classes?.name || "Class"}</p>
-              </CardContent>
-            </Card>
-          ))}
-          {assignments.length === 0 && <p className="text-muted-foreground">No subject assignments found.</p>}
-        </div>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex flex-wrap gap-4 items-end">
+              <div className="space-y-1.5 min-w-[160px]">
+                <label className="text-xs font-medium text-muted-foreground">Term</label>
+                <select className="w-full border border-input rounded-lg px-3 py-2 bg-background text-foreground text-sm" value={term} onChange={e => setTerm(e.target.value)}>
+                  <option value="term_1">Term 1</option><option value="term_2">Term 2</option><option value="term_3">Term 3</option>
+                </select>
+              </div>
+              <div className="space-y-1.5 min-w-[200px] flex-1">
+                <label className="text-xs font-medium text-muted-foreground">Subject</label>
+                <select className="w-full border border-input rounded-lg px-3 py-2 bg-background text-foreground text-sm" value={selectedSubjectId} onChange={e => { setSelectedSubjectId(e.target.value); setSelectedClassId(""); setSelectedAssignment(null); }}>
+                  <option value="">— Select Subject —</option>
+                  {uniqueSubjects.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
+                </select>
+              </div>
+              <div className="space-y-1.5 min-w-[200px] flex-1">
+                <label className="text-xs font-medium text-muted-foreground">Class</label>
+                <select className="w-full border border-input rounded-lg px-3 py-2 bg-background text-foreground text-sm" value={selectedClassId} onChange={e => setSelectedClassId(e.target.value)} disabled={!selectedSubjectId}>
+                  <option value="">— Select Class —</option>
+                  {uniqueClasses.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
+                </select>
+              </div>
+            </div>
+            {assignments.length === 0 && <p className="text-muted-foreground mt-3 text-sm">No subject assignments found. Ask your admin to assign you classes.</p>}
+            {selectedSubjectId && (
+              <div className="flex flex-wrap gap-2 mt-4 pt-3 border-t border-border">
+                {classesForSubject.map(a => (
+                  <Badge key={a.id} variant={selectedAssignment?.id === a.id ? "default" : "outline"} className="cursor-pointer px-3 py-1.5 text-sm" onClick={() => { setSelectedClassId(a.class_id); }}>
+                    {a.classes?.name}
+                  </Badge>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {selectedAssignment && (
           <>
