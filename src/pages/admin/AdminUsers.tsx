@@ -130,8 +130,11 @@ const AdminUsers = () => {
         ) : sorted(data).length === 0 ? (
           <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No users found.</TableCell></TableRow>
         ) : sorted(data).map(u => (
-          <TableRow key={u.id}>
-            <TableCell className="font-medium">{u.full_name}</TableCell>
+          <TableRow key={u.id} className={u.studentProfile?.is_active === false ? "opacity-50 bg-destructive/5" : ""}>
+            <TableCell className="font-medium">
+              {u.full_name}
+              {u.studentProfile?.is_active === false && <span className="ml-2 px-1.5 py-0.5 text-[10px] rounded bg-destructive/10 text-destructive font-medium">TRANSFERRED</span>}
+            </TableCell>
             <TableCell className="text-sm">{u.email}</TableCell>
             <TableCell className="text-sm">{u.phone || "—"}</TableCell>
             {showRole && <TableCell>{roleBadge(u.role)}</TableCell>}
