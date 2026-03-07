@@ -428,7 +428,10 @@ const AdminFees = () => {
                       <Input placeholder="Optional notes..." value={scholarshipForm.notes} onChange={e => setScholarshipForm({ ...scholarshipForm, notes: e.target.value })} />
                     </div>
                   </div>
-                  <Button onClick={handleAddScholarship}><Plus className="w-4 h-4 mr-1" /> Add Scholarship</Button>
+                  <div className="flex gap-2">
+                    <Button onClick={handleAddScholarship}><Plus className="w-4 h-4 mr-1" /> Add Scholarship</Button>
+                    <Button variant="outline" onClick={exportScholarshipsCSV} disabled={scholarships.length === 0}><FileDown className="w-4 h-4 mr-1" /> Export CSV</Button>
+                  </div>
                 </CardContent>
               </Card>
 
