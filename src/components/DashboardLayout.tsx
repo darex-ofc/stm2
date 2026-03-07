@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import ThemeToggle from "@/components/ThemeToggle";
+import GlobalSearch from "@/components/GlobalSearch";
 import {
   Menu, X, LogOut, Home, Users, BookOpen, ClipboardCheck,
   FileText, Bell, Settings, BarChart3, Key, GraduationCap,
@@ -129,7 +130,7 @@ const DashboardLayout = ({ children, role }: DashboardLayoutProps) => {
           <button onClick={() => setSidebarOpen(true)} className="lg:hidden text-foreground">
             <Menu className="w-6 h-6" />
           </button>
-          <div className="flex-1" />
+          <GlobalSearch role={role} />
           <div className="flex items-center gap-3">
             <ThemeToggle />
             <div className="text-right hidden sm:block">
