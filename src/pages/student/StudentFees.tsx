@@ -5,7 +5,7 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableHeader, TableHead, TableBody, TableRow, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { DollarSign, Printer, FileDown } from "lucide-react";
+import { DollarSign, Printer, FileDown, GraduationCap } from "lucide-react";
 import { printReceipt } from "@/components/admin/fees/ReceiptPrinter";
 import { methodLabel, DEFAULT_ZIG_RATE } from "@/components/admin/fees/FeeConstants";
 
@@ -14,6 +14,7 @@ const StudentFees = () => {
   const [fees, setFees] = useState<any[]>([]);
   const [studentName, setStudentName] = useState("");
   const [className, setClassName] = useState<string | undefined>(undefined);
+  const [scholarship, setScholarship] = useState<any>(null);
   const zigRate = DEFAULT_ZIG_RATE;
 
   useEffect(() => {
@@ -28,6 +29,11 @@ const StudentFees = () => {
           const { data: cls } = await supabase.from("classes").select("name, stream").eq("id", data.class_id).single();
           if (cls) setClassName(`${cls.name}${cls.stream ? ` (${cls.stream})` : ""}`);
         }
+      });
+    supabase.from("scholarships").select("*").eq("student_id", user.id).eq("is_active", true).order("created_at", { ascending: false }).limit(1)
+      .then(({ data }) => {
+        const active = (data || []).find((s: any) => !s.end_date || new Date(s.end_date) >= new Date());
+        setScholarship(active || null);
       });
   }, [user]);
 
