@@ -21,7 +21,7 @@ const TeacherAnnouncements = () => {
   const [filter, setFilter] = useState<"all" | "mine" | "class">("all");
 
   const fetchAnnouncements = async () => {
-    const { data } = await supabase.from("announcements").select("*, classes:target_class_id(name)")
+    const { data } = await supabase.from("announcements").select("*, classes:target_class_id(name), profiles:author_id(full_name)")
       .is("deleted_at", null).order("is_pinned", { ascending: false }).order("created_at", { ascending: false });
     setAnnouncements(data || []);
   };
@@ -112,7 +112,16 @@ const TeacherAnnouncements = () => {
                       )}
                     </div>
                     <p className="text-sm text-muted-foreground mt-1">{a.content}</p>
-                    <p className="text-xs text-muted-foreground mt-2">{new Date(a.created_at).toLocaleString()}</p>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      {(a as any).profiles?.full_name && (
+                        <span className="font-medium text-primary mr-2">
+                          — {(a as any).profiles.full_name.split(" ").length > 1 
+                            ? `Mr/Mrs ${(a as any).profiles.full_name.split(" ").slice(-1)[0]}` 
+                            : (a as any).profiles.full_name}
+                        </span>
+                      )}
+                      {new Date(a.created_at).toLocaleString()}
+                    </p>
                   </div>
                   {a.author_id === user?.id && (
                     <Button variant="ghost" size="sm" onClick={() => handleDelete(a.id)} className="text-red-500 hover:text-red-700 shrink-0">

@@ -23,7 +23,7 @@ const AdminAnnouncements = () => {
   const [editOpen, setEditOpen] = useState(false);
 
   const fetchData = async () => {
-    const { data } = await supabase.from("announcements").select("*").order("is_pinned", { ascending: false }).order("created_at", { ascending: false });
+    const { data } = await supabase.from("announcements").select("*, profiles:author_id(full_name)").order("is_pinned", { ascending: false }).order("created_at", { ascending: false });
     const all = data || [];
     setAnnouncements(all.filter((a: any) => !a.deleted_at));
     setDeletedAnn(all.filter((a: any) => a.deleted_at));
@@ -104,6 +104,13 @@ const AdminAnnouncements = () => {
                     <p className="font-bold text-foreground">{a.title}</p>
                     <p className="text-sm text-muted-foreground mt-1">{a.content}</p>
                     <p className="text-xs text-muted-foreground mt-2">
+                      {(a as any).profiles?.full_name && (
+                        <span className="font-medium text-primary mr-2">
+                          — {(a as any).profiles.full_name.split(" ").length > 1 
+                            ? `Mr/Mrs ${(a as any).profiles.full_name.split(" ").slice(-1)[0]}` 
+                            : (a as any).profiles.full_name}
+                        </span>
+                      )}
                       {new Date(a.created_at).toLocaleString()}
                       {a.target_role && ` • ${a.target_role}s only`}
                     </p>
