@@ -446,6 +446,20 @@ const Signup = () => {
                       <label className="text-sm font-medium text-foreground">Password</label>
                       <Input type="password" placeholder="Minimum 6 characters" value={password} onChange={e => setPassword(e.target.value)} required minLength={6} />
                     </div>
+                    {selectedRole === "parent" && (
+                      <div className="border-t border-border pt-3 space-y-3">
+                        <p className="text-sm font-semibold text-foreground">Link to Your Child</p>
+                        <p className="text-xs text-muted-foreground">Enter your child's Student ID (e.g. STM20260001) to automatically link your account. You can also link later through the admin.</p>
+                        <div>
+                          <label className="text-sm font-medium text-foreground">Child's Student ID</label>
+                          <Input placeholder="e.g. STM20260001" value={childStudentId} onChange={e => setChildStudentId(e.target.value)} />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-foreground">Phone Number</label>
+                          <Input placeholder="+263 7X XXX XXXX" value={phone} onChange={e => setPhone(e.target.value)} />
+                        </div>
+                      </div>
+                    )}
                     <Button type="submit" className="w-full" disabled={loading}>
                       {loading ? "Creating account..." : `Create ${roleConfig[selectedRole].label} Account`}
                     </Button>
