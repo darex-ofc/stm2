@@ -188,6 +188,15 @@ const AdminGrades = () => {
                   <option value="">All Subjects</option>
                   {subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>
+                <Button variant="outline" size="sm" onClick={() => {
+                  const count = exportCSV("grades_report",
+                    ["Student", "Subject", "Class", "Year", "Term", "Mark", "Grade", "Teacher", "Comment"],
+                    filtered.map(g => [getName(g.student_id), getSubjectName(g.subject_id), getClassName(g.class_id), g.academic_year, g.term.replace("_", " "), g.mark, g.grade_letter || "", getName(g.teacher_id), g.comment || ""])
+                  );
+                  toast({ title: "Exported", description: `${count} grade records exported.` });
+                }} disabled={filtered.length === 0}>
+                  <FileDown className="w-4 h-4 mr-1" /> Export CSV
+                </Button>
               </CardContent>
             </Card>
 

@@ -270,9 +270,20 @@ const AdminClasses = () => {
           </TabsList>
 
           <TabsContent value="classes">
-            <div className="relative max-w-sm mb-4">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input placeholder="Search classes..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
+            <div className="flex items-center gap-3 mb-4">
+              <div className="relative flex-1 max-w-sm">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input placeholder="Search classes..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
+              </div>
+              <Button variant="outline" size="sm" onClick={() => {
+                const count = exportCSV("class_list", 
+                  ["Name", "Form", "Level", "Stream", "Class Teacher", "Year"],
+                  filteredClasses.map(c => [c.name, `Form ${c.form}`, c.level.replace("_", " ").toUpperCase(), c.stream || "", c.class_teacher_id ? getTeacherName(c.class_teacher_id) : "", c.academic_year])
+                );
+                toast({ title: "Exported", description: `${count} classes exported to CSV.` });
+              }} disabled={filteredClasses.length === 0}>
+                <FileDown className="w-4 h-4 mr-1" /> Export CSV
+              </Button>
             </div>
             <Card>
               <CardContent className="p-0">
