@@ -80,6 +80,36 @@ export type Database = {
         }
         Relationships: []
       }
+      activity_log: {
+        Row: {
+          action: string
+          created_at: string
+          details: string | null
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          details?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          details?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       announcements: {
         Row: {
           author_id: string
@@ -88,6 +118,7 @@ export type Database = {
           deleted_at: string | null
           id: string
           is_pinned: boolean | null
+          target_class_id: string | null
           target_role: Database["public"]["Enums"]["app_role"] | null
           title: string
           updated_at: string
@@ -99,6 +130,7 @@ export type Database = {
           deleted_at?: string | null
           id?: string
           is_pinned?: boolean | null
+          target_class_id?: string | null
           target_role?: Database["public"]["Enums"]["app_role"] | null
           title: string
           updated_at?: string
@@ -110,11 +142,20 @@ export type Database = {
           deleted_at?: string | null
           id?: string
           is_pinned?: boolean | null
+          target_class_id?: string | null
           target_role?: Database["public"]["Enums"]["app_role"] | null
           title?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "announcements_target_class_id_fkey"
+            columns: ["target_class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       applications: {
         Row: {
@@ -397,6 +438,63 @@ export type Database = {
         }
         Relationships: []
       }
+      monthly_tests: {
+        Row: {
+          academic_year: number
+          class_id: string
+          comment: string | null
+          created_at: string
+          deleted_at: string | null
+          id: string
+          mark: number
+          month: number
+          student_id: string
+          subject_id: string
+          teacher_id: string
+        }
+        Insert: {
+          academic_year?: number
+          class_id: string
+          comment?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          mark: number
+          month: number
+          student_id: string
+          subject_id: string
+          teacher_id: string
+        }
+        Update: {
+          academic_year?: number
+          class_id?: string
+          comment?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          mark?: number
+          month?: number
+          student_id?: string
+          subject_id?: string
+          teacher_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monthly_tests_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monthly_tests_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -433,9 +531,14 @@ export type Database = {
       student_profiles: {
         Row: {
           address: string | null
+          allergies: string | null
+          birth_cert_number: string | null
+          blood_type: string | null
           class_id: string | null
           created_at: string
           date_of_birth: string | null
+          emergency_contact: string | null
+          emergency_phone: string | null
           enrollment_date: string | null
           form: number
           guardian_email: string | null
@@ -444,15 +547,22 @@ export type Database = {
           id: string
           is_active: boolean | null
           level: Database["public"]["Enums"]["academic_level"]
+          medical_conditions: string | null
+          national_id: string | null
           student_id: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
           address?: string | null
+          allergies?: string | null
+          birth_cert_number?: string | null
+          blood_type?: string | null
           class_id?: string | null
           created_at?: string
           date_of_birth?: string | null
+          emergency_contact?: string | null
+          emergency_phone?: string | null
           enrollment_date?: string | null
           form: number
           guardian_email?: string | null
@@ -461,15 +571,22 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           level: Database["public"]["Enums"]["academic_level"]
+          medical_conditions?: string | null
+          national_id?: string | null
           student_id?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
           address?: string | null
+          allergies?: string | null
+          birth_cert_number?: string | null
+          blood_type?: string | null
           class_id?: string | null
           created_at?: string
           date_of_birth?: string | null
+          emergency_contact?: string | null
+          emergency_phone?: string | null
           enrollment_date?: string | null
           form?: number
           guardian_email?: string | null
@@ -478,6 +595,8 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           level?: Database["public"]["Enums"]["academic_level"]
+          medical_conditions?: string | null
+          national_id?: string | null
           student_id?: string | null
           updated_at?: string
           user_id?: string
