@@ -6,6 +6,9 @@ import schoolLogo from "@/assets/school-logo.png";
 const navItems = [
   { label: "Home", path: "/" },
   { label: "About", path: "/about" },
+  { label: "Admissions", path: "/admissions" },
+  { label: "Staff", path: "/staff" },
+  { label: "Gallery", path: "/gallery" },
   { label: "News", path: "/news" },
   { label: "Contact", path: "/contact" },
 ];
