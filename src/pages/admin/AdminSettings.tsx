@@ -351,7 +351,7 @@ const AdminSettings = () => {
                 <div className="bg-muted rounded-lg p-3 text-sm space-y-1">
                   <p><strong>Backup Date:</strong> {new Date(pendingBackupData.created_at).toLocaleString()}</p>
                   <p><strong>Created By:</strong> {pendingBackupData.created_by}</p>
-                  <p><strong>Total Rows:</strong> {Object.values(pendingBackupData.row_counts || {}).reduce((a: number, b: any) => a + Number(b), 0)}</p>
+                  <p><strong>Total Rows:</strong> {String(Object.values(pendingBackupData.row_counts || {}).reduce((a: number, b: any) => a + Number(b), 0))}</p>
                 </div>
               )}
               <div className="flex gap-3">
