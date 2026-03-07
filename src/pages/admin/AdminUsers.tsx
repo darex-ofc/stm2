@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Users, Search, GraduationCap, BookOpen, Shield, Trash2, Eye, ArrowUpDown, Mail, Phone, Save, Edit, UserX, UserCheck, Link2, Unlink, UserPlus } from "lucide-react";
+import { Users, Search, GraduationCap, BookOpen, Shield, Trash2, Eye, ArrowUpDown, Mail, Phone, Save, Edit, UserX, UserCheck, Link2, Unlink, UserPlus, FileDown } from "lucide-react";
+import { exportCSV } from "@/lib/csv-export";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -391,6 +392,16 @@ const AdminUsers = () => {
       <div className="space-y-6">
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div><h1 className="font-display text-2xl font-bold text-foreground">User Management</h1><p className="text-muted-foreground text-sm">Manage all system users</p></div>
+          <Button variant="outline" size="sm" onClick={() => {
+            const data = allFiltered;
+            const count = exportCSV("users_list",
+              ["Name", "Email", "Phone", "Role", "Joined"],
+              data.map(u => [u.full_name, u.email, u.phone || "", u.role, new Date(u.created_at).toLocaleDateString()])
+            );
+            toast({ title: "Exported", description: `${count} users exported to CSV.` });
+          }} disabled={users.length === 0}>
+            <FileDown className="w-4 h-4 mr-1" /> Export CSV
+          </Button>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
