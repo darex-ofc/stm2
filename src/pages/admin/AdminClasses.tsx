@@ -7,9 +7,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableHeader, TableHead, TableBody, TableRow, TableCell } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { GraduationCap, Plus, Trash2, Edit, RotateCcw, Search } from "lucide-react";
+import { GraduationCap, Plus, Trash2, Edit, RotateCcw, Search, Info } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+
+// Class naming conventions
+const ZJC_OLEVEL_STREAMS = ["G", "W", "E", "Z", "U", "A", "B"];
+const ALEVEL_CLASSES = ["A", "B"];
+const ALEVEL_STREAMS = ["Sciences", "Commercials", "Arts"];
 
 const AdminClasses = () => {
   const { user } = useAuth();
@@ -19,13 +25,15 @@ const AdminClasses = () => {
   const [teachers, setTeachers] = useState<any[]>([]);
   const [assignments, setAssignments] = useState<any[]>([]);
   const [subjects, setSubjects] = useState<any[]>([]);
-  const [name, setName] = useState("");
-  const [form, setForm] = useState("1");
-  const [level, setLevel] = useState("o_level");
-  const [stream, setStream] = useState("");
   const [search, setSearch] = useState("");
   const [editClass, setEditClass] = useState<any>(null);
   const [editOpen, setEditOpen] = useState(false);
+
+  // Quick add form
+  const [quickLevel, setQuickLevel] = useState("o_level");
+  const [quickForm, setQuickForm] = useState("1");
+  const [quickStream, setQuickStream] = useState("");
+  const [customName, setCustomName] = useState("");
 
   // Assignment form
   const [assignTeacher, setAssignTeacher] = useState("");
@@ -51,31 +59,55 @@ const AdminClasses = () => {
 
   useEffect(() => { fetchData(); }, []);
 
+  // Auto-generate class name
+  const getAutoName = () => {
+    if (customName.trim()) return customName.trim();
+    const formNum = parseInt(quickForm);
+    if (quickLevel === "a_level") {
+      return `Form ${formNum}${quickStream ? ` ${quickStream}` : ""}`;
+    }
+    return `Form ${formNum}${quickStream ? ` ${quickStream}` : ""}`;
+  };
+
   const handleAdd = async () => {
-    if (!name.trim()) return;
-    const { error } = await supabase.from("classes").insert({ name: name.trim(), form: parseInt(form), level: level as any, stream: stream || null });
+    const name = getAutoName();
+    if (!name) return;
+    const { error } = await supabase.from("classes").insert({
+      name, form: parseInt(quickForm), level: quickLevel as any,
+      stream: quickStream || null,
+    });
     if (error) toast({ title: "Error", description: error.message, variant: "destructive" });
-    else { toast({ title: "Class Added" }); setName(""); setStream(""); fetchData(); }
+    else { toast({ title: "Class Added", description: name }); setCustomName(""); setQuickStream(""); fetchData(); }
+  };
+
+  const handleQuickAdd = async (form: number, stream: string, level: string) => {
+    const name = level === "a_level"
+      ? `Form ${form} Class ${stream.split(" - ")[0]} ${stream.split(" - ")[1] || ""}`
+      : `Form ${form} ${stream}`;
+    const { error } = await supabase.from("classes").insert({
+      name: name.trim(), form, level: level as any,
+      stream: stream || null,
+    });
+    if (error) toast({ title: "Error", description: error.message, variant: "destructive" });
+    else { toast({ title: "Class Added", description: name }); fetchData(); }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Delete this class? It will be moved to trash.")) return;
+    if (!confirm("Delete this class?")) return;
     await supabase.from("classes").update({ deleted_at: new Date().toISOString() } as any).eq("id", id);
-    toast({ title: "Class Deleted" });
-    fetchData();
+    toast({ title: "Class Deleted" }); fetchData();
   };
 
   const handleRestore = async (id: string) => {
     await supabase.from("classes").update({ deleted_at: null } as any).eq("id", id);
-    toast({ title: "Class Restored" });
-    fetchData();
+    toast({ title: "Class Restored" }); fetchData();
   };
 
   const handleEdit = async () => {
     if (!editClass) return;
     const { error } = await supabase.from("classes").update({
-      name: editClass.name, form: editClass.form, level: editClass.level, stream: editClass.stream,
-      class_teacher_id: editClass.class_teacher_id || null,
+      name: editClass.name, form: editClass.form, level: editClass.level,
+      stream: editClass.stream, class_teacher_id: editClass.class_teacher_id || null,
     }).eq("id", editClass.id);
     if (error) toast({ title: "Error", description: error.message, variant: "destructive" });
     else { toast({ title: "Class Updated" }); setEditOpen(false); fetchData(); }
@@ -92,36 +124,97 @@ const AdminClasses = () => {
 
   const handleRemoveAssignment = async (id: string) => {
     await supabase.from("teacher_assignments").delete().eq("id", id);
-    toast({ title: "Assignment Removed" });
-    fetchData();
+    toast({ title: "Assignment Removed" }); fetchData();
   };
 
   const getTeacherName = (id: string) => teachers.find(t => t.user_id === id)?.full_name || "—";
   const getClassName = (id: string) => classes.find(c => c.id === id)?.name || "—";
   const getSubjectName = (id: string) => subjects.find(s => s.id === id)?.name || "—";
 
-  const filteredClasses = classes.filter(c =>
-    c.name.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredClasses = classes.filter(c => c.name.toLowerCase().includes(search.toLowerCase()));
+
+  // Get available streams based on level
+  const getStreamsForLevel = () => {
+    if (quickLevel === "a_level") return ALEVEL_CLASSES;
+    return ZJC_OLEVEL_STREAMS;
+  };
+
+  // Get forms for level
+  const getFormsForLevel = () => {
+    if (quickLevel === "zjc") return [1, 2];
+    if (quickLevel === "o_level") return [1, 2, 3, 4];
+    return [5, 6];
+  };
 
   return (
     <DashboardLayout role="admin">
       <div className="space-y-6">
         <h1 className="font-display text-2xl font-bold text-foreground">Class Management</h1>
 
+        {/* Class Naming Guide */}
+        <Card className="bg-muted/50">
+          <CardContent className="p-4">
+            <div className="flex items-start gap-3">
+              <Info className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+              <div className="text-sm text-muted-foreground">
+                <p className="font-medium text-foreground mb-1">Class Naming Convention</p>
+                <p><strong>ZJC & O Level:</strong> Form 1-4 with streams G, W, E, Z, U, A (non-formal), B (non-formal) — e.g. <Badge variant="outline">Form 1 G</Badge> <Badge variant="outline">Form 3 W</Badge></p>
+                <p className="mt-1"><strong>A Level:</strong> Form 5-6, Class A or B with specialization — e.g. <Badge variant="outline">Form 5 Class A Sciences</Badge> <Badge variant="outline">Form 6 Class B Commercials</Badge></p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Add Class */}
         <Card>
           <CardHeader><CardTitle className="flex items-center gap-2"><Plus className="w-5 h-5" /> Add Class</CardTitle></CardHeader>
-          <CardContent className="flex flex-wrap gap-3">
-            <Input placeholder="Class name (e.g. Form 4A)" value={name} onChange={e => setName(e.target.value)} className="flex-1 min-w-[200px]" />
-            <select className="border border-input rounded-lg px-3 py-2 bg-background text-sm" value={form} onChange={e => setForm(e.target.value)}>
-              {[1,2,3,4,5,6].map(f => <option key={f} value={f}>Form {f}</option>)}
-            </select>
-            <select className="border border-input rounded-lg px-3 py-2 bg-background text-sm" value={level} onChange={e => setLevel(e.target.value)}>
-              <option value="zjc">ZJC</option><option value="o_level">O Level</option><option value="a_level">A Level</option>
-            </select>
-            <Input placeholder="Stream (optional)" value={stream} onChange={e => setStream(e.target.value)} className="w-40" />
-            <Button onClick={handleAdd}><Plus className="w-4 h-4 mr-1" /> Add</Button>
+          <CardContent className="space-y-4">
+            <div className="flex flex-wrap gap-3">
+              <select className="border border-input rounded-lg px-3 py-2 bg-background text-sm" value={quickLevel} onChange={e => { setQuickLevel(e.target.value); setQuickStream(""); setQuickForm(e.target.value === "a_level" ? "5" : "1"); }}>
+                <option value="zjc">ZJC</option><option value="o_level">O Level</option><option value="a_level">A Level</option>
+              </select>
+              <select className="border border-input rounded-lg px-3 py-2 bg-background text-sm" value={quickForm} onChange={e => setQuickForm(e.target.value)}>
+                {getFormsForLevel().map(f => <option key={f} value={f}>Form {f}</option>)}
+              </select>
+              <select className="border border-input rounded-lg px-3 py-2 bg-background text-sm" value={quickStream} onChange={e => setQuickStream(e.target.value)}>
+                <option value="">Select Stream...</option>
+                {quickLevel === "a_level" ? (
+                  ALEVEL_CLASSES.flatMap(cls =>
+                    ALEVEL_STREAMS.map(stream => (
+                      <option key={`${cls}-${stream}`} value={`Class ${cls} ${stream}`}>Class {cls} — {stream}</option>
+                    ))
+                  )
+                ) : (
+                  getStreamsForLevel().map(s => <option key={s} value={s}>{s}{s === "A" || s === "B" ? " (non-formal)" : ""}</option>)
+                )}
+              </select>
+              <Input placeholder="Custom name (optional)" value={customName} onChange={e => setCustomName(e.target.value)} className="w-48" />
+              <Button onClick={handleAdd}><Plus className="w-4 h-4 mr-1" /> Add</Button>
+            </div>
+
+            {/* Quick Add Buttons */}
+            <div>
+              <p className="text-xs text-muted-foreground mb-2">Quick Add — {quickLevel === "zjc" ? "ZJC" : quickLevel === "o_level" ? "O Level" : "A Level"} Form {quickForm}:</p>
+              <div className="flex flex-wrap gap-2">
+                {quickLevel === "a_level" ? (
+                  ALEVEL_CLASSES.flatMap(cls =>
+                    ALEVEL_STREAMS.map(stream => (
+                      <Button key={`${cls}-${stream}`} variant="outline" size="sm"
+                        onClick={() => handleQuickAdd(parseInt(quickForm), `${cls} - ${stream}`, quickLevel)}>
+                        F{quickForm} {cls} {stream}
+                      </Button>
+                    ))
+                  )
+                ) : (
+                  ZJC_OLEVEL_STREAMS.map(s => (
+                    <Button key={s} variant="outline" size="sm"
+                      onClick={() => handleQuickAdd(parseInt(quickForm), s, quickLevel)}>
+                      F{quickForm} {s}
+                    </Button>
+                  ))
+                )}
+              </div>
+            </div>
           </CardContent>
         </Card>
 
@@ -129,7 +222,7 @@ const AdminClasses = () => {
           <TabsList>
             <TabsTrigger value="classes">Classes ({filteredClasses.length})</TabsTrigger>
             <TabsTrigger value="assignments">Teacher Assignments ({assignments.length})</TabsTrigger>
-            <TabsTrigger value="deleted">Recently Deleted ({deletedClasses.length})</TabsTrigger>
+            <TabsTrigger value="deleted">Deleted ({deletedClasses.length})</TabsTrigger>
           </TabsList>
 
           <TabsContent value="classes">
@@ -141,17 +234,14 @@ const AdminClasses = () => {
               <CardContent className="p-0">
                 <Table>
                   <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead><TableHead>Form</TableHead><TableHead>Level</TableHead>
-                      <TableHead>Stream</TableHead><TableHead>Class Teacher</TableHead><TableHead>Year</TableHead><TableHead>Actions</TableHead>
-                    </TableRow>
+                    <TableRow><TableHead>Name</TableHead><TableHead>Form</TableHead><TableHead>Level</TableHead><TableHead>Stream</TableHead><TableHead>Class Teacher</TableHead><TableHead>Year</TableHead><TableHead>Actions</TableHead></TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredClasses.map(c => (
                       <TableRow key={c.id}>
                         <TableCell className="font-medium">{c.name}</TableCell>
                         <TableCell>Form {c.form}</TableCell>
-                        <TableCell>{c.level.replace("_", " ").toUpperCase()}</TableCell>
+                        <TableCell><Badge variant="secondary">{c.level.replace("_", " ").toUpperCase()}</Badge></TableCell>
                         <TableCell>{c.stream || "—"}</TableCell>
                         <TableCell>{c.class_teacher_id ? getTeacherName(c.class_teacher_id) : "—"}</TableCell>
                         <TableCell>{c.academic_year}</TableCell>
@@ -191,9 +281,7 @@ const AdminClasses = () => {
             <Card className="mt-4">
               <CardContent className="p-0">
                 <Table>
-                  <TableHeader>
-                    <TableRow><TableHead>Teacher</TableHead><TableHead>Class</TableHead><TableHead>Subject</TableHead><TableHead>Year</TableHead><TableHead>Actions</TableHead></TableRow>
-                  </TableHeader>
+                  <TableHeader><TableRow><TableHead>Teacher</TableHead><TableHead>Class</TableHead><TableHead>Subject</TableHead><TableHead>Year</TableHead><TableHead>Actions</TableHead></TableRow></TableHeader>
                   <TableBody>
                     {assignments.map(a => (
                       <TableRow key={a.id}>
@@ -201,11 +289,7 @@ const AdminClasses = () => {
                         <TableCell>{getClassName(a.class_id)}</TableCell>
                         <TableCell>{getSubjectName(a.subject_id)}</TableCell>
                         <TableCell>{a.academic_year}</TableCell>
-                        <TableCell>
-                          <Button variant="ghost" size="sm" onClick={() => handleRemoveAssignment(a.id)}>
-                            <Trash2 className="w-4 h-4 text-destructive" />
-                          </Button>
-                        </TableCell>
+                        <TableCell><Button variant="ghost" size="sm" onClick={() => handleRemoveAssignment(a.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button></TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -218,9 +302,7 @@ const AdminClasses = () => {
             <Card>
               <CardContent className="p-0">
                 <Table>
-                  <TableHeader>
-                    <TableRow><TableHead>Name</TableHead><TableHead>Form</TableHead><TableHead>Deleted</TableHead><TableHead>Actions</TableHead></TableRow>
-                  </TableHeader>
+                  <TableHeader><TableRow><TableHead>Name</TableHead><TableHead>Form</TableHead><TableHead>Deleted</TableHead><TableHead>Actions</TableHead></TableRow></TableHeader>
                   <TableBody>
                     {deletedClasses.length === 0 ? (
                       <TableRow><TableCell colSpan={4} className="text-center py-8 text-muted-foreground">No deleted classes.</TableCell></TableRow>
@@ -229,11 +311,7 @@ const AdminClasses = () => {
                         <TableCell className="font-medium">{c.name}</TableCell>
                         <TableCell>Form {c.form}</TableCell>
                         <TableCell className="text-sm text-muted-foreground">{new Date(c.deleted_at).toLocaleDateString()}</TableCell>
-                        <TableCell>
-                          <Button variant="ghost" size="sm" onClick={() => handleRestore(c.id)}>
-                            <RotateCcw className="w-4 h-4 text-primary" /> Restore
-                          </Button>
-                        </TableCell>
+                        <TableCell><Button variant="ghost" size="sm" onClick={() => handleRestore(c.id)}><RotateCcw className="w-4 h-4 text-primary" /> Restore</Button></TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
