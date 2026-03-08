@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Search, Home, Users, FileText, GraduationCap, BookOpen, Key,
   BarChart3, Bell, DollarSign, Receipt, Settings, ClipboardCheck
@@ -58,8 +59,11 @@ interface GlobalSearchProps {
 const GlobalSearch = ({ role }: GlobalSearchProps) => {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
+  const [showResults, setShowResults] = useState(true);
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
 
   const features = role === "admin" ? adminFeatures : role === "teacher" ? teacherFeatures : role === "parent" ? studentFeatures : studentFeatures;
 
@@ -71,6 +75,22 @@ const GlobalSearch = ({ role }: GlobalSearchProps) => {
           f.description.toLowerCase().includes(q) ||
           f.keywords.some(k => k.includes(q));
       });
+
+  const handleQueryChange = (value: string) => {
+    setQuery(value);
+    if (value.trim().length > 0) {
+      setIsSearching(true);
+      setShowResults(false);
+      clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(() => {
+        setIsSearching(false);
+        setShowResults(true);
+      }, 400);
+    } else {
+      setIsSearching(false);
+      setShowResults(true);
+    }
+  };
 
   // Keyboard shortcut: Ctrl+K or Cmd+K
   useEffect(() => {
@@ -86,7 +106,11 @@ const GlobalSearch = ({ role }: GlobalSearchProps) => {
 
   useEffect(() => {
     if (open) setTimeout(() => inputRef.current?.focus(), 100);
-    else setQuery("");
+    else {
+      setQuery("");
+      setIsSearching(false);
+      setShowResults(true);
+    }
   }, [open]);
 
   const go = (path: string) => {
@@ -112,13 +136,23 @@ const GlobalSearch = ({ role }: GlobalSearchProps) => {
             <Input
               ref={inputRef}
               value={query}
-              onChange={e => setQuery(e.target.value)}
+              onChange={e => handleQueryChange(e.target.value)}
               placeholder="Search pages & features..."
               className="border-0 focus-visible:ring-0 shadow-none h-12 text-base"
             />
           </div>
           <div className="max-h-72 overflow-y-auto p-2">
-            {filtered.length === 0 ? (
+            {isSearching ? (
+              Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-3 px-3 py-2.5">
+                  <Skeleton className="w-8 h-8 rounded-md shrink-0" />
+                  <div className="flex-1 space-y-1.5">
+                    <Skeleton className="h-4 w-28 rounded" />
+                    <Skeleton className="h-3 w-44 rounded" />
+                  </div>
+                </div>
+              ))
+            ) : !showResults ? null : filtered.length === 0 ? (
               <p className="text-center text-muted-foreground text-sm py-8">No results found</p>
             ) : (
               filtered.map(item => (
