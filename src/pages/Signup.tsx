@@ -205,6 +205,12 @@ const Signup = () => {
     setOtpStep("done");
     setOtpVerifying(false);
     setLoading(false);
+
+    // Send welcome email
+    supabase.functions.invoke("send-branded-email", {
+      body: { email, type: "welcome", welcome_data: { name: fullName, role: selectedRole } },
+    }).catch(() => {});
+
     toast({ title: "Account Created!", description: "Welcome to St. Mary's. You can now log in." });
     setTimeout(() => navigate("/login", { replace: true }), 2000);
   };
