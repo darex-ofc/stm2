@@ -18,16 +18,21 @@ interface SearchItem {
 
 const adminFeatures: SearchItem[] = [
   { label: "Dashboard", description: "Overview & statistics", path: "/admin", icon: Home, keywords: ["home", "overview", "stats", "summary"] },
-  { label: "Users", description: "Manage students, teachers & admins", path: "/admin/users", icon: Users, keywords: ["students", "teachers", "accounts", "people", "staff"] },
+  { label: "Users", description: "Manage students, teachers & admins", path: "/admin/users", icon: Users, keywords: ["students", "teachers", "accounts", "people", "staff", "ban"] },
   { label: "Applications", description: "Review admission applications", path: "/admin/applications", icon: FileText, keywords: ["admissions", "apply", "enroll", "new students"] },
   { label: "Classes", description: "Manage classes & streams", path: "/admin/classes", icon: GraduationCap, keywords: ["forms", "streams", "class teacher", "assign"] },
   { label: "Subjects", description: "Manage subjects & curriculum", path: "/admin/subjects", icon: BookOpen, keywords: ["curriculum", "courses", "compulsory", "optional"] },
   { label: "Access Codes", description: "Generate signup codes", path: "/admin/codes", icon: Key, keywords: ["registration", "invite", "signup", "codes"] },
   { label: "Grades Overview", description: "View all student grades", path: "/admin/grades", icon: BarChart3, keywords: ["marks", "results", "performance", "academic"] },
+  { label: "Rankings", description: "Student & class rankings", path: "/admin/rankings", icon: Trophy, keywords: ["rank", "position", "top", "leaderboard"] },
+  { label: "Messages", description: "Direct messaging", path: "/admin/messages", icon: MessageSquare, keywords: ["chat", "dm", "inbox", "conversation"] },
   { label: "Announcements", description: "Create & manage announcements", path: "/admin/announcements", icon: Bell, keywords: ["notice", "news", "broadcast", "pin"] },
   { label: "Fee Management", description: "Fees, payments & receipts", path: "/admin/fees", icon: DollarSign, keywords: ["payment", "receipt", "balance", "tuition", "money", "barcode", "scan"] },
   { label: "Finance & Petty Cash", description: "Track expenses & petty cash", path: "/admin/finance", icon: Receipt, keywords: ["expenses", "cash", "budget", "spending"] },
-  { label: "Settings", description: "System & school settings", path: "/admin/settings", icon: Settings, keywords: ["config", "system", "school name", "preferences"] },
+  { label: "Homepage Updates", description: "Manage homepage content", path: "/admin/homepage", icon: Newspaper, keywords: ["website", "content", "news", "updates"] },
+  { label: "Staff Gallery", description: "Manage staff profiles & photos", path: "/admin/staff-gallery", icon: Image, keywords: ["photos", "teachers", "staff", "gallery"] },
+  { label: "Student History", description: "View student academic history", path: "/admin/student-history", icon: History, keywords: ["records", "past", "archive", "history"] },
+  { label: "Settings", description: "System & school settings", path: "/admin/settings", icon: Settings, keywords: ["config", "system", "school name", "preferences", "promote"] },
 ];
 
 const teacherFeatures: SearchItem[] = [
