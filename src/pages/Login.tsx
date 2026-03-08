@@ -113,6 +113,20 @@ const Login = () => {
       return;
     }
 
+    // Check if user is banned
+    const { data: profileData } = await supabase
+      .from("profiles")
+      .select("is_banned")
+      .eq("user_id", data.user.id)
+      .single();
+
+    if (profileData?.is_banned) {
+      await supabase.auth.signOut();
+      toast({ title: "Account Banned", description: "Your account has been banned. Please contact the school administration.", variant: "destructive" });
+      setLoading(false);
+      return;
+    }
+
     const { data: roleData } = await supabase
       .from("user_roles")
       .select("role")
