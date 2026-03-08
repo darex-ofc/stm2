@@ -101,6 +101,36 @@ const TeacherAttendance = () => {
         user_id: user.id, action: "Marked attendance",
         details: `${date} — ${records.length} students`, entity_type: "attendance"
       });
+
+      // Send attendance alert emails for absent/late students
+      const alertStudents = students.filter(s => {
+        const status = attendance[s.user_id];
+        return status === "absent" || status === "late";
+      });
+      const formattedDate = new Date(date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+
+      for (const s of alertStudents) {
+        const studentEmail = s.profiles?.email;
+        const guardianEmail = s.guardian_email;
+        const alertData = {
+          studentName: s.profiles?.full_name || "Student",
+          date: formattedDate,
+          status: attendance[s.user_id],
+          className: selectedClassName,
+        };
+        // Email the student
+        if (studentEmail) {
+          supabase.functions.invoke("send-branded-email", {
+            body: { email: studentEmail, type: "attendance_alert", attendance_data: alertData },
+          }).catch(() => {});
+        }
+        // Email the guardian
+        if (guardianEmail && guardianEmail !== studentEmail) {
+          supabase.functions.invoke("send-branded-email", {
+            body: { email: guardianEmail, type: "attendance_alert", attendance_data: alertData },
+          }).catch(() => {});
+        }
+      }
     }
     setSaving(false);
   };
