@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -51,8 +51,9 @@ const Signup = () => {
       .then(({ data }) => setClasses(data || []));
   }, []);
 
-  const filteredClasses = classes.filter(c =>
-    c.level === selectedLevel && c.form === parseInt(selectedForm)
+  const filteredClasses = useMemo(() => 
+    classes.filter(c => c.level === selectedLevel && c.form === parseInt(selectedForm)),
+    [classes, selectedLevel, selectedForm]
   );
 
   const handleSignup = async (e: React.FormEvent) => {
@@ -124,7 +125,6 @@ const Signup = () => {
         await supabase.from("profiles").update({ phone }).eq("user_id", authData.user.id);
       }
     } else if (codeData.role === "parent" && childStudentId.trim()) {
-      // Look up student by student_id and link
       const { data: studentProfile } = await supabase
         .from("student_profiles")
         .select("user_id")
@@ -158,7 +158,6 @@ const Signup = () => {
     }
     setRequestLoading(true);
 
-    // Create the auth account immediately
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email, password,
       options: { data: { full_name: fullName } },
@@ -170,7 +169,6 @@ const Signup = () => {
       return;
     }
 
-    // Submit application with user_id linked
     const { error } = await supabase.from("applications").insert({
       full_name: fullName,
       email,
@@ -187,10 +185,8 @@ const Signup = () => {
       user_id: authData.user.id,
     });
 
-    // Sign out since they can't access anything yet (no role)
     await supabase.auth.signOut();
 
-    // Send confirmation email
     try {
       await supabase.functions.invoke("send-notification", {
         body: { type: "request_received", email, full_name: fullName },
@@ -206,7 +202,8 @@ const Signup = () => {
     }
   };
 
-  const StudentPersonalFields = () => (
+  // Inline student personal fields JSX (NOT a component to prevent remounting)
+  const studentPersonalFields = (
     <>
       <div className="grid grid-cols-2 gap-3">
         <div>
@@ -260,6 +257,17 @@ const Signup = () => {
         </div>
       </div>
     </>
+  );
+
+  const classSelectField = (
+    <div>
+      <label className="text-sm font-medium text-foreground">Class</label>
+      <select className="w-full border border-input rounded-lg px-3 py-2 bg-background text-sm" value={selectedClass} onChange={e => setSelectedClass(e.target.value)}>
+        <option value="">Select class...</option>
+        {filteredClasses.map(c => <option key={c.id} value={c.id}>{c.name}{c.stream ? ` (${c.stream})` : ""}</option>)}
+      </select>
+      {filteredClasses.length === 0 && <p className="text-xs text-muted-foreground mt-1">No classes available for this level/form.</p>}
+    </div>
   );
 
   if (requestSubmitted) {
@@ -355,15 +363,8 @@ const Signup = () => {
                           <label className="text-sm font-medium text-foreground">Password</label>
                           <Input type="password" placeholder="Minimum 6 characters" value={password} onChange={e => setPassword(e.target.value)} required minLength={6} />
                         </div>
-                        <StudentPersonalFields />
-                        <div>
-                          <label className="text-sm font-medium text-foreground">Class</label>
-                          <select className="w-full border border-input rounded-lg px-3 py-2 bg-background text-sm" value={selectedClass} onChange={e => setSelectedClass(e.target.value)}>
-                            <option value="">Select class...</option>
-                            {filteredClasses.map(c => <option key={c.id} value={c.id}>{c.name}{c.stream ? ` (${c.stream})` : ""}</option>)}
-                          </select>
-                          {filteredClasses.length === 0 && <p className="text-xs text-muted-foreground mt-1">No classes available for this level/form.</p>}
-                        </div>
+                        {studentPersonalFields}
+                        {classSelectField}
                         <Button type="submit" className="w-full" disabled={loading}>
                           {loading ? "Creating account..." : "Create Student Account"}
                         </Button>
@@ -387,15 +388,8 @@ const Signup = () => {
                           <label className="text-sm font-medium text-foreground">Password *</label>
                           <Input type="password" placeholder="Minimum 6 characters" value={password} onChange={e => setPassword(e.target.value)} required minLength={6} />
                         </div>
-                        <StudentPersonalFields />
-                        <div>
-                          <label className="text-sm font-medium text-foreground">Class</label>
-                          <select className="w-full border border-input rounded-lg px-3 py-2 bg-background text-sm" value={selectedClass} onChange={e => setSelectedClass(e.target.value)}>
-                            <option value="">Select class...</option>
-                            {filteredClasses.map(c => <option key={c.id} value={c.id}>{c.name}{c.stream ? ` (${c.stream})` : ""}</option>)}
-                          </select>
-                          {filteredClasses.length === 0 && <p className="text-xs text-muted-foreground mt-1">No classes available for this level/form.</p>}
-                        </div>
+                        {studentPersonalFields}
+                        {classSelectField}
                         <div>
                           <label className="text-sm font-medium text-foreground">Previous School</label>
                           <Input placeholder="Name of previous school" value={previousSchool} onChange={e => setPreviousSchool(e.target.value)} />
