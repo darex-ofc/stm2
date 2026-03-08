@@ -268,7 +268,7 @@ const AdminUsers = () => {
         ) : sorted(data).length === 0 ? (
           <TableRow><TableCell colSpan={showRole ? 8 : 7} className="text-center py-8 text-muted-foreground">No users found.</TableCell></TableRow>
         ) : sorted(data).map(u => (
-          <TableRow key={u.id} className={`${u.studentProfile?.is_active === false ? "opacity-50 bg-destructive/5" : ""} ${selectedIds.has(u.user_id) ? "bg-primary/5" : ""}`}>
+          <TableRow key={u.id} className={`${u.is_banned ? "opacity-50 bg-destructive/10" : u.studentProfile?.is_active === false ? "opacity-50 bg-destructive/5" : ""} ${selectedIds.has(u.user_id) ? "bg-primary/5" : ""}`}>
             <TableCell>
               <Checkbox checked={selectedIds.has(u.user_id)} onCheckedChange={() => toggleSelect(u.user_id)} />
             </TableCell>
