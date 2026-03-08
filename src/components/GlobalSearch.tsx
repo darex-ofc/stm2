@@ -41,8 +41,10 @@ const teacherFeatures: SearchItem[] = [
   { label: "My Classes", description: "View assigned classes", path: "/teacher/classes", icon: Users, keywords: ["students", "class list"] },
   { label: "Set Grades", description: "Enter student grades", path: "/teacher/grades", icon: BookOpen, keywords: ["marks", "results"] },
   { label: "Monthly Tests", description: "Record monthly test marks", path: "/teacher/monthly-tests", icon: BarChart3, keywords: ["tests", "marks"] },
+  { label: "Rankings", description: "Student rankings", path: "/teacher/rankings", icon: Trophy, keywords: ["rank", "position", "top"] },
   { label: "Attendance", description: "Mark student attendance", path: "/teacher/attendance", icon: ClipboardCheck, keywords: ["present", "absent"] },
   { label: "Report Cards", description: "Generate report cards", path: "/teacher/reports", icon: FileText, keywords: ["reports"] },
+  { label: "Messages", description: "Direct messaging", path: "/teacher/messages", icon: MessageSquare, keywords: ["chat", "dm", "inbox"] },
   { label: "Announcements", description: "View & create announcements", path: "/teacher/announcements", icon: Bell, keywords: ["notice"] },
   { label: "Settings", description: "Profile settings", path: "/teacher/profile", icon: Settings, keywords: ["profile"] },
 ];
