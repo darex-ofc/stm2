@@ -44,6 +44,21 @@ const AddFeeForm = ({ students, studentProfiles, feeStructure, zigRate, years, o
   const perTermDue = fees.tuition + fees.levy;
   const totalDue = perTermDue * selectedTerms.length;
 
+  // Check for existing records for selected student/term/year
+  const existingForSelection = selectedStudent
+    ? selectedTerms.map((term) => {
+        const existing = existingRecords.find(
+          (r) => r.student_id === selectedStudent && r.term === term && r.academic_year === parseInt(feeYear)
+        );
+        return existing ? { term, record: existing } : null;
+      }).filter(Boolean) as { term: string; record: any }[]
+    : [];
+
+  const hasExistingConflicts = existingForSelection.length > 0;
+  const termsWithoutConflicts = selectedTerms.filter(
+    (t) => !existingForSelection.some((e) => e.term === t)
+  );
+
   const toggleTerm = (term: string) => {
     setSelectedTerms((prev) =>
       prev.includes(term) ? prev.filter((t) => t !== term) : [...prev, term]
