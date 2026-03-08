@@ -33,12 +33,27 @@ const TeacherGrades = () => {
   const [selectedSubjectId, setSelectedSubjectId] = useState<string>("");
   const [selectedClassId, setSelectedClassId] = useState<string>("");
   const [gradingScales, setGradingScales] = useState<GradingScale[]>([]);
+  const [classTeacherClasses, setClassTeacherClasses] = useState<any[]>([]);
+  const [classTeacherClassIds, setClassTeacherClassIds] = useState<Set<string>>(new Set());
+  const [allSubjects, setAllSubjects] = useState<any[]>([]);
 
   useEffect(() => {
     if (!user) return;
-    supabase.from("teacher_assignments").select("*, classes(*), subjects(*)")
-      .eq("teacher_id", user.id).then(({ data }) => setAssignments(data || []));
+    Promise.all([
+      supabase.from("teacher_assignments").select("*, classes(*), subjects(*)").eq("teacher_id", user.id),
+      supabase.from("classes").select("*").eq("class_teacher_id", user.id).is("deleted_at", null),
+    ]).then(([assignRes, ctRes]) => {
+      setAssignments(assignRes.data || []);
+      setClassTeacherClasses(ctRes.data || []);
+      setClassTeacherClassIds(new Set((ctRes.data || []).map((c: any) => c.id)));
+    });
   }, [user]);
+
+  // Load all subjects for class teachers
+  useEffect(() => {
+    if (classTeacherClasses.length === 0) return;
+    supabase.from("subjects").select("*").is("deleted_at", null).then(({ data }) => setAllSubjects(data || []));
+  }, [classTeacherClasses]);
 
   // Fetch grading scales when assignment changes
   useEffect(() => {
@@ -63,13 +78,15 @@ const TeacherGrades = () => {
       setStudents([]);
     }
 
+
     const { data: existing } = await supabase.from("grades").select("*")
       .eq("subject_id", selectedAssignment.subject_id).eq("class_id", selectedAssignment.class_id)
-      .eq("term", term as any).eq("teacher_id", user!.id).is("deleted_at", null);
+      .eq("term", term as any).is("deleted_at", null);
 
     const { data: deleted } = await supabase.from("grades").select("*")
       .eq("subject_id", selectedAssignment.subject_id).eq("class_id", selectedAssignment.class_id)
-      .eq("term", term as any).eq("teacher_id", user!.id).not("deleted_at", "is", null);
+      .eq("term", term as any).not("deleted_at", "is", null);
+
 
     setExistingGrades(existing || []);
     setDeletedGrades(deleted || []);
@@ -167,16 +184,39 @@ const TeacherGrades = () => {
   };
 
   // Derive unique subjects and classes for filters
-  const uniqueSubjects = Array.from(new Map(assignments.map(a => [a.subject_id, a.subjects?.name || "Subject"])).entries());
-  const classesForSubject = assignments.filter(a => !selectedSubjectId || a.subject_id === selectedSubjectId);
+  // Build combined subject/class lists including class teacher access
+  const subjectMap = new Map(assignments.map(a => [a.subject_id, a.subjects?.name || "Subject"]));
+  // Class teachers get all subjects
+  if (classTeacherClasses.length > 0) {
+    allSubjects.forEach(s => { if (!subjectMap.has(s.id)) subjectMap.set(s.id, s.name); });
+  }
+  const uniqueSubjects = Array.from(subjectMap.entries());
+
+  const classesForSubject = selectedSubjectId
+    ? [
+        ...assignments.filter(a => a.subject_id === selectedSubjectId),
+        ...classTeacherClasses.filter(c => !assignments.some(a => a.class_id === c.id && a.subject_id === selectedSubjectId)).map(c => ({
+          class_id: c.id, classes: c, subject_id: selectedSubjectId, subjects: allSubjects.find(s => s.id === selectedSubjectId),
+        })),
+      ]
+    : assignments;
   const uniqueClasses = Array.from(new Map(classesForSubject.map(a => [a.class_id, a.classes?.name || "Class"])).entries());
 
   useEffect(() => {
     if (selectedSubjectId && selectedClassId) {
       const match = assignments.find(a => a.subject_id === selectedSubjectId && a.class_id === selectedClassId);
-      if (match) setSelectedAssignment(match);
+      if (match) {
+        setSelectedAssignment(match);
+      } else if (classTeacherClassIds.has(selectedClassId)) {
+        // Class teacher accessing a subject they don't teach directly
+        const cls = classTeacherClasses.find(c => c.id === selectedClassId);
+        const sub = allSubjects.find(s => s.id === selectedSubjectId);
+        if (cls && sub) {
+          setSelectedAssignment({ class_id: selectedClassId, subject_id: selectedSubjectId, classes: cls, subjects: sub });
+        }
+      }
     }
-  }, [selectedSubjectId, selectedClassId, assignments]);
+  }, [selectedSubjectId, selectedClassId, assignments, classTeacherClassIds]);
 
   return (
     <DashboardLayout role="teacher">

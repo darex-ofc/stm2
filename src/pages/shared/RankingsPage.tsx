@@ -7,10 +7,11 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 
 interface RankingsPageProps {
   classFilter?: boolean;
-  studentHighlight?: string; // user_id to highlight
+  studentHighlight?: string;
+  defaultClass?: string;
 }
 
-const RankingsPage = ({ classFilter = true, studentHighlight }: RankingsPageProps) => {
+const RankingsPage = ({ classFilter = true, studentHighlight, defaultClass }: RankingsPageProps) => {
   const [classes, setClasses] = useState<any[]>([]);
   const [subjects, setSubjects] = useState<any[]>([]);
   const [profiles, setProfiles] = useState<any[]>([]);
@@ -37,6 +38,11 @@ const RankingsPage = ({ classFilter = true, studentHighlight }: RankingsPageProp
     };
     fetch();
   }, []);
+
+  // Auto-select default class when provided
+  useEffect(() => {
+    if (defaultClass && !selectedClass) setSelectedClass(defaultClass);
+  }, [defaultClass]);
 
   const getName = (uid: string) => profiles.find(p => p.user_id === uid)?.full_name || "Unknown";
   const getSubjectName = (id: string) => subjects.find(s => s.id === id)?.name || "—";
