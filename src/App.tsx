@@ -32,6 +32,7 @@ import TeacherProfile from "./pages/teacher/TeacherProfile";
 import TeacherMonthlyTests from "./pages/teacher/TeacherMonthlyTests";
 import TeacherRankings from "./pages/teacher/TeacherRankings";
 import TeacherMessages from "./pages/teacher/TeacherMessages";
+import TeacherRecordBook from "./pages/teacher/TeacherRecordBook";
 
 // Student pages
 import StudentDashboard from "./pages/student/StudentDashboard";
