@@ -331,20 +331,51 @@ const TeacherClasses = () => {
                 </TabsContent>
 
                 <TabsContent value="academic" className="space-y-3 mt-4">
-                  <p className="text-sm font-bold text-foreground">Recent Grades ({studentGrades.length})</p>
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-bold text-foreground">All Grades ({studentGrades.length})</p>
+                    {selectedClass && isClassTeacherOf(selectedClass) && (
+                      <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300 text-[10px]">
+                        <Star className="w-3 h-3 mr-1" /> Class Teacher — Can Edit
+                      </Badge>
+                    )}
+                  </div>
                   {studentGrades.length === 0 ? (
                     <p className="text-muted-foreground text-sm py-4">No grades recorded.</p>
                   ) : (
                     <div className="space-y-1">
-                      {studentGrades.slice(0, 20).map(g => (
+                      {studentGrades.slice(0, 30).map(g => (
                         <div key={g.id} className="flex items-center justify-between p-2 rounded bg-muted/50">
                           <span className="text-sm font-medium">{g.subjects?.name || "Subject"}</span>
                           <div className="flex items-center gap-2">
-                            <span className={`text-sm font-bold ${Number(g.mark) >= 75 ? "text-green-600" : Number(g.mark) >= 50 ? "text-yellow-600" : "text-red-600"}`}>
-                              {g.mark}%
-                            </span>
-                            <Badge variant="outline" className="text-[10px]">{g.grade_letter || "—"}</Badge>
-                            <span className="text-xs text-muted-foreground">{g.term?.replace("_", " ")}</span>
+                            {editingGrade?.id === g.id ? (
+                              <>
+                                <Input type="number" min={0} max={100} className="w-20 h-7 text-sm"
+                                  value={editMark} onChange={e => setEditMark(e.target.value)} />
+                                <Input placeholder="Comment" className="w-32 h-7 text-sm"
+                                  value={editComment} onChange={e => setEditComment(e.target.value)} />
+                                <Button size="sm" variant="ghost" className="h-7 px-2" onClick={handleEditGradeSave}>
+                                  <Save className="w-3 h-3" />
+                                </Button>
+                                <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => setEditingGrade(null)}>✕</Button>
+                              </>
+                            ) : (
+                              <>
+                                <span className={`text-sm font-bold ${Number(g.mark) >= 75 ? "text-green-600" : Number(g.mark) >= 50 ? "text-yellow-600" : "text-red-600"}`}>
+                                  {g.mark}%
+                                </span>
+                                <Badge variant="outline" className="text-[10px]">{g.grade_letter || "—"}</Badge>
+                                <span className="text-xs text-muted-foreground">{g.term?.replace("_", " ")}</span>
+                                {selectedClass && isClassTeacherOf(selectedClass) && (
+                                  <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => {
+                                    setEditingGrade(g);
+                                    setEditMark(g.mark.toString());
+                                    setEditComment(g.comment || "");
+                                  }}>
+                                    <Edit className="w-3 h-3" />
+                                  </Button>
+                                )}
+                              </>
+                            )}
                           </div>
                         </div>
                       ))}

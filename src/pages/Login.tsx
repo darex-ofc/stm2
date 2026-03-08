@@ -208,6 +208,21 @@ const Login = () => {
               );
             })}
 
+            {biometricAvailable && (
+              <div className="mt-4">
+                <Button
+                  variant="outline"
+                  className="w-full border-2 border-dashed border-primary/30 hover:border-primary/60"
+                  onClick={handleBiometricLogin}
+                  disabled={biometricLoading}
+                >
+                  {biometricLoading ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <Fingerprint className="w-5 h-5 mr-2 text-primary" />}
+                  Sign in with Biometrics
+                </Button>
+                <p className="text-xs text-muted-foreground text-center mt-1">Use fingerprint or face scan</p>
+              </div>
+            )}
+
             <div className="text-center mt-6 space-y-2">
               <Link to="/signup" className="text-sm text-primary hover:underline">
                 Don't have an account? Sign up
