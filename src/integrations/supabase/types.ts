@@ -919,6 +919,36 @@ export type Database = {
           },
         ]
       }
+      report_signatures: {
+        Row: {
+          created_at: string
+          display_name: string
+          id: string
+          role_title: string
+          signature_url: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_name: string
+          id?: string
+          role_title: string
+          signature_url?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string
+          id?: string
+          role_title?: string
+          signature_url?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       report_verifications: {
         Row: {
           academic_year: number
