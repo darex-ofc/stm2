@@ -195,7 +195,7 @@ const AdminApplications = () => {
                   </Button>
                   {a.status === "pending" && (
                     <>
-                      <Button variant="ghost" size="sm" onClick={() => { setSelected(a); setDetailOpen(true); setSelectedClass(""); }}>
+                      <Button variant="ghost" size="sm" onClick={() => { setSelected(a); setDetailOpen(true); setSelectedClass(a.class_id || ""); }}>
                         <CheckCircle className="w-4 h-4 text-green-600" />
                       </Button>
                       <Button variant="ghost" size="sm" onClick={() => updateStatus(a.id, "rejected")}>
