@@ -16,6 +16,8 @@ interface Props {
   years: number[];
   onAdded: () => void;
   classes?: any[];
+  existingRecords?: any[];
+  onPayExisting?: (record: any) => void;
 }
 
 const TERMS = [
