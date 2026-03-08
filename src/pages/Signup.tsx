@@ -128,14 +128,31 @@ const Signup = () => {
     } else if (codeData.role === "parent" && childStudentId.trim()) {
       const { data: studentProfile } = await supabase
         .from("student_profiles")
-        .select("user_id")
+        .select("user_id, guardian_phone, guardian_email")
         .eq("student_id", childStudentId.trim())
         .single();
       if (studentProfile) {
-        await supabase.from("parent_student_links").insert({
-          parent_id: authData.user.id,
-          student_id: studentProfile.user_id,
-        });
+        // Verify parent identity by matching guardian phone or email
+        const parentPhone = phone.trim().replace(/\s+/g, "");
+        const studentGuardianPhone = (studentProfile.guardian_phone || "").trim().replace(/\s+/g, "");
+        const studentGuardianEmail = (studentProfile.guardian_email || "").trim().toLowerCase();
+        const parentEmail = email.trim().toLowerCase();
+        
+        const phoneMatch = parentPhone && studentGuardianPhone && parentPhone.includes(studentGuardianPhone.slice(-9));
+        const emailMatch = parentEmail && studentGuardianEmail && parentEmail === studentGuardianEmail;
+        
+        if (phoneMatch || emailMatch) {
+          await supabase.from("parent_student_links").insert({
+            parent_id: authData.user.id,
+            student_id: studentProfile.user_id,
+          });
+        } else {
+          toast({ 
+            title: "Child Not Linked", 
+            description: "Your phone number or email doesn't match the guardian info on the student's profile. You can request linking through the school admin.", 
+            variant: "destructive" 
+          });
+        }
       }
       if (phone) {
         await supabase.from("profiles").update({ phone }).eq("user_id", authData.user.id);
@@ -466,7 +483,7 @@ const Signup = () => {
                     {selectedRole === "parent" && (
                       <div className="border-t border-border pt-3 space-y-3">
                         <p className="text-sm font-semibold text-foreground">Link to Your Child</p>
-                        <p className="text-xs text-muted-foreground">Enter your child's Student ID (e.g. STM20260001) to automatically link your account. You can also link later through the admin.</p>
+                         <p className="text-xs text-muted-foreground">Enter your child's Student ID (e.g. STM20260001) to automatically link your account. Your phone or email must match the guardian info on the student's profile. You can also request linking through the school admin.</p>
                         <div>
                           <label className="text-sm font-medium text-foreground">Child's Student ID</label>
                           <Input 

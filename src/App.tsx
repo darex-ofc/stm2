@@ -73,6 +73,7 @@ import ParentAttendance from "./pages/parent/ParentAttendance";
 import ParentFees from "./pages/parent/ParentFees";
 import ParentMessages from "./pages/parent/ParentMessages";
 import ParentReports from "./pages/parent/ParentReports";
+import ParentSettings from "./pages/parent/ParentSettings";
 
 // Public pages
 import VerifyReport from "./pages/VerifyReport";
@@ -154,6 +155,7 @@ const App = () => (
               <Route path="/parent/fees" element={<ProtectedRoute allowedRoles={["parent"]}><ParentFees /></ProtectedRoute>} />
               <Route path="/parent/messages" element={<ProtectedRoute allowedRoles={["parent"]}><ParentMessages /></ProtectedRoute>} />
               <Route path="/parent/reports" element={<ProtectedRoute allowedRoles={["parent"]}><ParentReports /></ProtectedRoute>} />
+              <Route path="/parent/settings" element={<ProtectedRoute allowedRoles={["parent"]}><ParentSettings /></ProtectedRoute>} />
 
               <Route path="*" element={<NotFound />} />
             </Routes>
