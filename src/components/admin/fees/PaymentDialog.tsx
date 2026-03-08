@@ -18,7 +18,7 @@ interface Props {
   onPaid: () => void;
 }
 
-const PaymentDialog = ({ record, open, onOpenChange, zigRate, getStudentName, onPaid }: Props) => {
+const PaymentDialog = ({ record, open, onOpenChange, zigRate, getStudentName, getStudentEmail, getStudentClass, onPaid }: Props) => {
   const { toast } = useToast();
   const [amount, setAmount] = useState("");
   const [currency, setCurrency] = useState("USD");
