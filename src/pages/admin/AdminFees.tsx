@@ -523,7 +523,7 @@ const AdminFees = () => {
           </TabsContent>
         </Tabs>
 
-        <PaymentDialog record={payRecord} open={payOpen} onOpenChange={setPayOpen} zigRate={zigRate} getStudentName={getStudentName} onPaid={fetchData} />
+        <PaymentDialog record={payRecord} open={payOpen} onOpenChange={setPayOpen} zigRate={zigRate} getStudentName={getStudentName} getStudentEmail={getStudentEmail} getStudentClass={getStudentClassName} onPaid={fetchData} />
 
         {/* Edit Dialog */}
         <Dialog open={editOpen} onOpenChange={setEditOpen}>
