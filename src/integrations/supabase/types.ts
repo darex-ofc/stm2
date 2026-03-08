@@ -791,6 +791,134 @@ export type Database = {
         }
         Relationships: []
       }
+      record_book_columns: {
+        Row: {
+          column_type: string
+          created_at: string
+          display_order: number
+          id: string
+          name: string
+          record_book_id: string
+        }
+        Insert: {
+          column_type?: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          name: string
+          record_book_id: string
+        }
+        Update: {
+          column_type?: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          name?: string
+          record_book_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "record_book_columns_record_book_id_fkey"
+            columns: ["record_book_id"]
+            isOneToOne: false
+            referencedRelation: "record_books"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      record_book_entries: {
+        Row: {
+          column_id: string
+          created_at: string
+          id: string
+          record_book_id: string
+          student_id: string
+          updated_at: string
+          value: string | null
+        }
+        Insert: {
+          column_id: string
+          created_at?: string
+          id?: string
+          record_book_id: string
+          student_id: string
+          updated_at?: string
+          value?: string | null
+        }
+        Update: {
+          column_id?: string
+          created_at?: string
+          id?: string
+          record_book_id?: string
+          student_id?: string
+          updated_at?: string
+          value?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "record_book_entries_column_id_fkey"
+            columns: ["column_id"]
+            isOneToOne: false
+            referencedRelation: "record_book_columns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "record_book_entries_record_book_id_fkey"
+            columns: ["record_book_id"]
+            isOneToOne: false
+            referencedRelation: "record_books"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      record_books: {
+        Row: {
+          academic_year: number
+          class_id: string | null
+          created_at: string
+          id: string
+          name: string
+          subject_id: string | null
+          teacher_id: string
+          updated_at: string
+        }
+        Insert: {
+          academic_year?: number
+          class_id?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          subject_id?: string | null
+          teacher_id: string
+          updated_at?: string
+        }
+        Update: {
+          academic_year?: number
+          class_id?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          subject_id?: string | null
+          teacher_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "record_books_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "record_books_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       scholarships: {
         Row: {
           coverage_percentage: number
