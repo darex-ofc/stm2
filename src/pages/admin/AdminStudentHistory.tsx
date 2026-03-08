@@ -143,7 +143,7 @@ const AdminStudentHistory = () => {
               {/* GRADES */}
               <TabsContent value="grades" className="space-y-4">
                 <div className="flex justify-end">
-                  <ExportDropdown data={gradeExportData} filename={`${selected.student_id || "student"}_grades`} title="Grades History" />
+                  <ExportDropdown headers={gradeExportHeaders} rows={gradeExportRows} filename={`${selected.student_id || "student"}_grades`} title="Grades History" />
                 </div>
                 {gradeYears.length === 0 ? (
                   <p className="text-center py-8 text-muted-foreground">No grade records found.</p>
