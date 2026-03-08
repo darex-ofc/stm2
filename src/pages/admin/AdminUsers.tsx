@@ -466,9 +466,23 @@ const AdminUsers = () => {
           ))}
         </div>
 
-        <div className="relative max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input placeholder="Search users..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="relative max-w-sm flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input placeholder="Search users..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
+          </div>
+          {selectedIds.size > 0 && (
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-muted-foreground">{selectedIds.size} selected</span>
+              <Button variant="destructive" size="sm" onClick={handleBatchDelete}>
+                <Trash2 className="w-4 h-4 mr-1" /> Delete
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleBatchDeactivate}>
+                <UserX className="w-4 h-4 mr-1" /> Deactivate
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => setSelectedIds(new Set())}>Clear</Button>
+            </div>
+          )}
         </div>
 
         <Tabs defaultValue="all">

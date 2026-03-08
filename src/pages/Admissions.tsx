@@ -206,8 +206,11 @@ const Admissions = () => {
                           {getFormsForLevel().map(f => <option key={f} value={f}>Form {f}</option>)}
                         </select>
                       </div>
+                      <div>
+                        <label className="text-sm font-medium text-foreground mb-1 block">National ID / Birth Cert No.</label>
+                        <Input name="national_id" value={form.national_id} onChange={handleChange} placeholder="e.g. 63-123456A78" />
+                      </div>
                     </div>
-                  </div>
 
                   {/* Guardian Information */}
                   <div>
