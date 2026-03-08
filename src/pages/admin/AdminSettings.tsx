@@ -239,6 +239,30 @@ const AdminSettings = () => {
     return "Holiday Period";
   };
 
+  const handlePromote = async () => {
+    setPromoteConfirmOpen(false);
+    setPromoting(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const year = currentSession?.academic_year || new Date().getFullYear();
+      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/promote-students`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session?.access_token}`,
+        },
+        body: JSON.stringify({ academic_year: year }),
+      });
+      if (!resp.ok) throw new Error((await resp.json()).error || "Promotion failed");
+      const result = await resp.json();
+      setPromotionResult(result);
+      toast({ title: "Promotion Complete", description: `${result.promoted} promoted, ${result.graduated} graduated.` });
+    } catch (e: any) {
+      toast({ title: "Promotion Error", description: e.message, variant: "destructive" });
+    }
+    setPromoting(false);
+  };
+
   const totalRows = Object.values(dbStats).reduce((a, b) => a + b, 0);
   const dbLimit = 500000; // Approximate free-tier limit
   const dbUsagePercent = Math.min((totalRows / dbLimit) * 100, 100);
