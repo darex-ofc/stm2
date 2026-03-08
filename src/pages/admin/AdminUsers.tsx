@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Users, Search, GraduationCap, BookOpen, Shield, Trash2, Eye, ArrowUpDown, Mail, Phone, Save, Edit, UserX, UserCheck, Link2, Unlink, UserPlus, CheckSquare, Square, Ban, ShieldOff } from "lucide-react";
+import { Users, Search, GraduationCap, BookOpen, Shield, Trash2, Eye, ArrowUpDown, Mail, Phone, Save, Edit, UserX, UserCheck, Link2, Unlink, UserPlus, CheckSquare, Square, Ban, ShieldOff, KeyRound } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import ExportDropdown from "@/components/ExportDropdown";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -32,6 +32,37 @@ const AdminUsers = () => {
   const [linkStudentId, setLinkStudentId] = useState("");
   const [linking, setLinking] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [resetPwOpen, setResetPwOpen] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [resettingPw, setResettingPw] = useState(false);
+
+  const handleResetPassword = async (userId: string) => {
+    if (!newPassword || newPassword.length < 6) {
+      toast({ title: "Error", description: "Password must be at least 6 characters.", variant: "destructive" });
+      return;
+    }
+    setResettingPw(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-reset-password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`,
+        },
+        body: JSON.stringify({ user_id: userId, new_password: newPassword }),
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || 'Failed to reset password');
+      toast({ title: "Success", description: "Password has been reset successfully." });
+      setNewPassword("");
+      setResetPwOpen(false);
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setResettingPw(false);
+    }
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -560,6 +591,33 @@ const AdminUsers = () => {
                     </Button>
                   </div>
                 )}
+
+                {/* Reset Password */}
+                <Card>
+                  <CardContent className="p-3">
+                    {resetPwOpen ? (
+                      <div className="space-y-3">
+                        <p className="text-sm font-medium flex items-center gap-2"><KeyRound className="w-4 h-4" /> Reset Password for {selectedUser.full_name}</p>
+                        <Input
+                          type="password"
+                          placeholder="Enter new password (min 6 chars)"
+                          value={newPassword}
+                          onChange={e => setNewPassword(e.target.value)}
+                        />
+                        <div className="flex gap-2">
+                          <Button size="sm" onClick={() => handleResetPassword(selectedUser.user_id)} disabled={resettingPw}>
+                            {resettingPw ? "Resetting..." : "Confirm Reset"}
+                          </Button>
+                          <Button variant="outline" size="sm" onClick={() => { setResetPwOpen(false); setNewPassword(""); }}>Cancel</Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <Button variant="outline" size="sm" className="w-full" onClick={() => setResetPwOpen(true)}>
+                        <KeyRound className="w-4 h-4 mr-2" /> Reset User Password
+                      </Button>
+                    )}
+                  </CardContent>
+                </Card>
 
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <div className="flex items-center gap-2"><Mail className="w-4 h-4 text-muted-foreground" /> {selectedUser.email || "—"}</div>
