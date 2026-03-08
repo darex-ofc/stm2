@@ -492,8 +492,9 @@ const AdminUsers = () => {
             <TabsTrigger value="teachers">Teachers ({stats.teachers})</TabsTrigger>
             <TabsTrigger value="students">Students ({stats.students})</TabsTrigger>
             <TabsTrigger value="parents">Parents ({stats.parents})</TabsTrigger>
-            <TabsTrigger value="admins">Admins ({stats.admins})</TabsTrigger>
-          </TabsList>
+             <TabsTrigger value="admins">Admins ({stats.admins})</TabsTrigger>
+             <TabsTrigger value="graduated">Graduated ({graduatedUsers.length})</TabsTrigger>
+           </TabsList>
           <TabsContent value="all"><Card><CardContent className="p-0"><UserTable data={allFiltered} /></CardContent></Card></TabsContent>
           <TabsContent value="teachers"><Card><CardHeader><CardTitle className="flex items-center gap-2"><BookOpen className="w-5 h-5" /> Teachers</CardTitle></CardHeader><CardContent className="p-0"><UserTable data={filterByRole("teacher")} showRole={false} /></CardContent></Card></TabsContent>
           <TabsContent value="students"><Card><CardHeader><CardTitle className="flex items-center gap-2"><GraduationCap className="w-5 h-5" /> Students</CardTitle></CardHeader><CardContent className="p-0"><UserTable data={filterByRole("student")} showRole={false} /></CardContent></Card></TabsContent>
