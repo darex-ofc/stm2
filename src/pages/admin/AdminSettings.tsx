@@ -13,6 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { Progress } from "@/components/ui/progress";
 import AvatarUpload from "@/components/AvatarUpload";
 import ThemeToggle from "@/components/ThemeToggle";
+import SignatureManager from "@/components/SignatureManager";
 
 const AdminSettings = () => {
   const { user, profile } = useAuth();
@@ -409,6 +410,9 @@ const AdminSettings = () => {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Report Signatures */}
+        <SignatureManager mode="admin" />
 
         {/* Backup & Restore */}
         <Card>

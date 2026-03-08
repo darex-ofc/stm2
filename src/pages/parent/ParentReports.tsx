@@ -147,6 +147,31 @@ const ParentReports = () => {
     return "Unsatisfactory. Immediate intervention required.";
   };
 
+  const fetchSignatureImages = async (): Promise<Map<string, { url: string; name: string; base64: string }>> => {
+    const { data: sigs } = await supabase.from("report_signatures").select("*");
+    const map = new Map<string, { url: string; name: string; base64: string }>();
+    if (!sigs) return map;
+    await Promise.all(sigs.map(async (sig) => {
+      if (!sig.signature_url) return;
+      try {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        await new Promise<void>((resolve) => {
+          img.onload = () => {
+            const canvas = document.createElement("canvas");
+            canvas.width = img.width; canvas.height = img.height;
+            canvas.getContext("2d")?.drawImage(img, 0, 0);
+            map.set(sig.role_title, { url: sig.signature_url, name: sig.display_name, base64: canvas.toDataURL("image/png") });
+            resolve();
+          };
+          img.onerror = () => resolve();
+          img.src = sig.signature_url;
+        });
+      } catch {}
+    }));
+    return map;
+  };
+
   const generateReportPDF = async () => {
     if (!canView || grades.length === 0) return null;
 
@@ -278,13 +303,32 @@ const ParentReports = () => {
       y += 5;
     }
 
-    // Signatures
+    // Signatures with actual images
+    const sigMap = await fetchSignatureImages();
     const sigY = y + 5;
-    ["Class Teacher", "Headmaster", "Parent/Guardian"].forEach((label, i) => {
-      const sigW = (pw - 30 - 20) / 3;
-      const sx = 15 + i * (sigW + 10);
-      doc.setDrawColor(60); doc.setLineWidth(0.3); doc.line(sx, sigY + 12, sx + sigW, sigY + 12);
-      doc.setFontSize(7.5); doc.setTextColor(100); doc.text(label, sx + sigW / 2, sigY + 16, { align: "center" });
+    const sigLabels = [
+      { key: "class_teacher", label: "Class Teacher" },
+      { key: "headmaster", label: "Headmaster" },
+      { key: "deputy_head", label: "Deputy Headmaster" },
+    ];
+    const sigWidth = (pw - 30 - 20) / 3;
+    sigLabels.forEach((sig, i) => {
+      const sx = 15 + i * (sigWidth + 10);
+      const sigData = sigMap.get(sig.key);
+      if (sigData?.base64) {
+        try { doc.addImage(sigData.base64, "PNG", sx + (sigWidth - 25) / 2, sigY, 25, 10); } catch {}
+      }
+      doc.setDrawColor(60); doc.setLineWidth(0.3); doc.line(sx, sigY + 12, sx + sigWidth, sigY + 12);
+      doc.setFontSize(7.5); doc.setTextColor(100);
+      const name = sigData?.name || "";
+      if (name) {
+        doc.setFont("helvetica", "bold");
+        doc.text(name, sx + sigWidth / 2, sigY + 16, { align: "center" });
+        doc.setFont("helvetica", "normal"); doc.setFontSize(6.5);
+        doc.text(sig.label, sx + sigWidth / 2, sigY + 20, { align: "center" });
+      } else {
+        doc.text(sig.label, sx + sigWidth / 2, sigY + 16, { align: "center" });
+      }
     });
     y = sigY + 26;
 
@@ -341,22 +385,25 @@ const ParentReports = () => {
       const result = await generateReportPDF();
       if (!result) return;
       const blob = result.doc.output("blob");
-      const file = new File([blob], `Report_${profileName.replace(/\s+/g, "_")}.pdf`, { type: "application/pdf" });
-      const shareText = `📄 ${profileName}'s Report Card - ${term.replace("_", " ").toUpperCase()} ${year}\n📊 Average: ${avgMark}%\n🏫 ${schoolInfo.name}`;
+      const filename = `Report_${profileName.replace(/\s+/g, "_")}_${term.toUpperCase()}_${year}.pdf`;
+      const file = new File([blob], filename, { type: "application/pdf" });
+      const verifyUrl = `${window.location.origin}/verify-report?serial=${encodeURIComponent(result.serialNo)}`;
+      const shareText = `📄 ${profileName}'s Report Card - ${term.replace("_", " ").toUpperCase()} ${year}\n📊 Average: ${avgMark}%\n🏫 ${schoolInfo.name}\n🔗 Verify: ${verifyUrl}`;
 
       if (platform === "native" && navigator.share) {
-        await navigator.share({ title: `${profileName}'s Report Card`, text: shareText, files: [file] });
+        try {
+          await navigator.share({ title: `${profileName}'s Report Card`, text: shareText, files: [file] });
+        } catch {
+          await navigator.share({ title: `${profileName}'s Report Card`, text: shareText, url: verifyUrl });
+          result.doc.save(filename);
+        }
       } else if (platform === "whatsapp") {
-        // Can't attach files via URL, share text with verification link
-        const url = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
-        window.open(url, "_blank");
-        // Also trigger download so they can attach manually
-        result.doc.save(`Report_${profileName.replace(/\s+/g, "_")}.pdf`);
+        window.open(`https://wa.me/?text=${encodeURIComponent(shareText)}`, "_blank");
+        result.doc.save(filename);
       } else if (platform === "email") {
         const subject = encodeURIComponent(`${profileName}'s Report Card - ${term.replace("_", " ").toUpperCase()} ${year}`);
-        const body = encodeURIComponent(shareText);
-        window.open(`mailto:?subject=${subject}&body=${body}`, "_self");
-        result.doc.save(`Report_${profileName.replace(/\s+/g, "_")}.pdf`);
+        window.open(`mailto:?subject=${subject}&body=${encodeURIComponent(shareText)}`, "_self");
+        result.doc.save(filename);
       } else if (platform === "copy") {
         await navigator.clipboard.writeText(shareText);
       }
