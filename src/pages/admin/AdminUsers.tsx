@@ -592,6 +592,33 @@ const AdminUsers = () => {
                   </div>
                 )}
 
+                {/* Reset Password */}
+                <Card>
+                  <CardContent className="p-3">
+                    {resetPwOpen ? (
+                      <div className="space-y-3">
+                        <p className="text-sm font-medium flex items-center gap-2"><KeyRound className="w-4 h-4" /> Reset Password for {selectedUser.full_name}</p>
+                        <Input
+                          type="password"
+                          placeholder="Enter new password (min 6 chars)"
+                          value={newPassword}
+                          onChange={e => setNewPassword(e.target.value)}
+                        />
+                        <div className="flex gap-2">
+                          <Button size="sm" onClick={() => handleResetPassword(selectedUser.user_id)} disabled={resettingPw}>
+                            {resettingPw ? "Resetting..." : "Confirm Reset"}
+                          </Button>
+                          <Button variant="outline" size="sm" onClick={() => { setResetPwOpen(false); setNewPassword(""); }}>Cancel</Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <Button variant="outline" size="sm" className="w-full" onClick={() => setResetPwOpen(true)}>
+                        <KeyRound className="w-4 h-4 mr-2" /> Reset User Password
+                      </Button>
+                    )}
+                  </CardContent>
+                </Card>
+
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <div className="flex items-center gap-2"><Mail className="w-4 h-4 text-muted-foreground" /> {selectedUser.email || "—"}</div>
                   <div className="flex items-center gap-2"><Phone className="w-4 h-4 text-muted-foreground" /> {selectedUser.phone || "—"}</div>
