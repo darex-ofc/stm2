@@ -220,11 +220,39 @@ const AddFeeForm = ({ students, studentProfiles, feeStructure, zigRate, years, o
             </div>
           )}
         </div>
+
+        {/* Warning for existing records */}
+        {hasExistingConflicts && selectedStudent && (
+          <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/30 text-sm space-y-2">
+            <p className="font-medium text-destructive">⚠️ Records already exist for this student:</p>
+            {existingForSelection.map(({ term, record }) => {
+              const balance = Number(record.amount_due) - Number(record.amount_paid);
+              return (
+                <div key={term} className="flex items-center justify-between">
+                  <span className="text-foreground">
+                    {term.replace("_", " ").toUpperCase()} {feeYear} — Balance: <span className="font-bold text-destructive">${balance.toFixed(2)}</span>
+                  </span>
+                  {onPayExisting && balance > 0 && (
+                    <Button size="sm" variant="outline" onClick={() => onPayExisting(record)}>
+                      Record Payment
+                    </Button>
+                  )}
+                </div>
+              );
+            })}
+            {termsWithoutConflicts.length > 0 && (
+              <p className="text-xs text-muted-foreground">
+                Only {termsWithoutConflicts.map(t => t.replace("_", " ").toUpperCase()).join(", ")} will be created as new records.
+              </p>
+            )}
+          </div>
+        )}
+
         <div className="flex flex-wrap gap-3">
           <Input placeholder="Notes (optional)" value={notes} onChange={(e) => setNotes(e.target.value)} className="flex-1 min-w-[200px]" />
-          <Button onClick={handleAdd} disabled={isSubmitting}>
+          <Button onClick={handleAdd} disabled={isSubmitting || (hasExistingConflicts && termsWithoutConflicts.length === 0)}>
             <Plus className="w-4 h-4 mr-1" />
-            {isSubmitting ? "Adding..." : `Add ${selectedTerms.length > 1 ? `${selectedTerms.length} Records` : "Record"}`}
+            {isSubmitting ? "Adding..." : hasExistingConflicts && termsWithoutConflicts.length === 0 ? "Records Already Exist" : `Add ${termsWithoutConflicts.length > 0 && hasExistingConflicts ? `${termsWithoutConflicts.length} New Record${termsWithoutConflicts.length > 1 ? "s" : ""}` : selectedTerms.length > 1 ? `${selectedTerms.length} Records` : "Record"}`}
           </Button>
         </div>
       </CardContent>
