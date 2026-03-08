@@ -89,6 +89,7 @@ const AdminFees = () => {
   useEffect(() => { fetchData(); }, []);
 
   const getStudentName = (id: string) => students.find((s) => s.user_id === id)?.full_name || "Unknown";
+  const getStudentEmail = (id: string) => students.find((s) => s.user_id === id)?.email || "";
   const getStudentClassName = (studentId: string) => {
     const sp = studentProfiles.find((s: any) => s.user_id === studentId);
     if (!sp?.class_id) return undefined;
