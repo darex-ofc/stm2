@@ -32,6 +32,7 @@ const StudentReports = () => {
   const [classStudentCount, setClassStudentCount] = useState(0);
   const [classGrades, setClassGrades] = useState<any[]>([]);
   const [profileName, setProfileName] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const [schoolInfo] = useState({
     name: "St. Mary's High School",
