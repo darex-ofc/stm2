@@ -211,6 +211,7 @@ const Admissions = () => {
                         <Input name="national_id" value={form.national_id} onChange={handleChange} placeholder="e.g. 63-123456A78" />
                       </div>
                     </div>
+                  </div>
 
                   {/* Guardian Information */}
                   <div>
