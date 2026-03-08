@@ -186,7 +186,7 @@ const AdminStudentHistory = () => {
                     <Card><CardContent className="p-3"><p className="text-xs text-muted-foreground">Total Paid</p><p className="text-lg font-bold text-green-600">${totalPaid.toFixed(2)}</p></CardContent></Card>
                     <Card><CardContent className="p-3"><p className="text-xs text-muted-foreground">Balance</p><p className={`text-lg font-bold ${totalDue - totalPaid > 0 ? "text-destructive" : "text-green-600"}`}>${(totalDue - totalPaid).toFixed(2)}</p></CardContent></Card>
                   </div>
-                  <ExportDropdown data={feeExportData} filename={`${selected.student_id || "student"}_fees`} title="Fee History" />
+                  <ExportDropdown headers={feeExportHeaders} rows={feeExportRows} filename={`${selected.student_id || "student"}_fees`} title="Fee History" />
                 </div>
                 {feeYears.length === 0 ? (
                   <p className="text-center py-8 text-muted-foreground">No fee records found.</p>
