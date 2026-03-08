@@ -1,1 +1,4 @@
 project_id = "vojhptlreurutrzftatn"
+
+[functions.auto-session]
+verify_jwt = false

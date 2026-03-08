@@ -7,7 +7,7 @@ import { Table, TableHeader, TableHead, TableBody, TableRow, TableCell } from "@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Calendar, CheckCircle, Edit, User, Save, Shield, Lock, Unlock, Download, Upload, AlertTriangle, Database, BarChart3 } from "lucide-react";
+import { Calendar, CheckCircle, Edit, User, Save, Shield, Lock, Unlock, Download, Upload, AlertTriangle, Database, BarChart3, GraduationCap, ArrowUpRight, Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { Progress } from "@/components/ui/progress";
@@ -40,6 +40,11 @@ const AdminSettings = () => {
   // DB usage stats
   const [dbStats, setDbStats] = useState<Record<string, number>>({});
   const [loadingStats, setLoadingStats] = useState(false);
+
+  // Promotion
+  const [promoting, setPromoting] = useState(false);
+  const [promoteConfirmOpen, setPromoteConfirmOpen] = useState(false);
+  const [promotionResult, setPromotionResult] = useState<any>(null);
 
   useEffect(() => {
     if (profile) { setFullName(profile.full_name || ""); setAvatarUrl(profile.avatar_url || null); }
@@ -234,6 +239,30 @@ const AdminSettings = () => {
     return "Holiday Period";
   };
 
+  const handlePromote = async () => {
+    setPromoteConfirmOpen(false);
+    setPromoting(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const year = currentSession?.academic_year || new Date().getFullYear();
+      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/promote-students`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session?.access_token}`,
+        },
+        body: JSON.stringify({ academic_year: year }),
+      });
+      if (!resp.ok) throw new Error((await resp.json()).error || "Promotion failed");
+      const result = await resp.json();
+      setPromotionResult(result);
+      toast({ title: "Promotion Complete", description: `${result.promoted} promoted, ${result.graduated} graduated.` });
+    } catch (e: any) {
+      toast({ title: "Promotion Error", description: e.message, variant: "destructive" });
+    }
+    setPromoting(false);
+  };
+
   const totalRows = Object.values(dbStats).reduce((a, b) => a + b, 0);
   const dbLimit = 500000; // Approximate free-tier limit
   const dbUsagePercent = Math.min((totalRows / dbLimit) * 100, 100);
@@ -335,6 +364,51 @@ const AdminSettings = () => {
           </CardContent>
         </Card>
 
+        {/* Student Promotion */}
+        <Card className="border-l-4 border-l-amber-500">
+          <CardHeader><CardTitle className="flex items-center gap-2"><GraduationCap className="w-5 h-5" /> Student Year-End Promotion</CardTitle></CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Promote all active students to the next form at year-end. Students at the final form of their level will either move to the next level or be marked as <strong>graduated</strong>.
+            </p>
+            <div className="bg-muted/50 rounded-lg p-3 text-sm space-y-1">
+              <p>• Form 1 → 2, Form 2 → 3 (ZJC → O Level), Form 3 → 4</p>
+              <p>• Form 4 → 5 (O Level → A Level), Form 5 → 6</p>
+              <p>• Form 6 → <strong>Graduated</strong> (deactivated)</p>
+              <p className="text-xs text-muted-foreground mt-2">Class assignments will be reset — you'll reassign students to new classes after promotion.</p>
+            </div>
+            {promotionResult && (
+              <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3 text-sm">
+                <p className="font-medium text-green-700 dark:text-green-300">Last promotion: {promotionResult.promoted} promoted, {promotionResult.graduated} graduated</p>
+              </div>
+            )}
+            <Button onClick={() => setPromoteConfirmOpen(true)} disabled={promoting} variant="default" className="bg-amber-600 hover:bg-amber-700 text-white">
+              {promoting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Promoting...</> : <><ArrowUpRight className="w-4 h-4 mr-2" /> Promote All Students</>}
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Promote Confirm Dialog */}
+        <Dialog open={promoteConfirmOpen} onOpenChange={setPromoteConfirmOpen}>
+          <DialogContent>
+            <DialogHeader><DialogTitle className="flex items-center gap-2 text-amber-600"><AlertTriangle className="w-5 h-5" /> Confirm Student Promotion</DialogTitle></DialogHeader>
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                <strong>This will promote ALL active students</strong> to the next form. Final-year students (Form 6 A Level) will be marked as graduated and deactivated.
+              </p>
+              <p className="text-sm text-muted-foreground">
+                This action is intended for <strong>year-end use only</strong>. Make sure all reports, grades, and fees are finalized before proceeding.
+              </p>
+              <div className="flex gap-3">
+                <Button variant="outline" className="flex-1" onClick={() => setPromoteConfirmOpen(false)}>Cancel</Button>
+                <Button className="flex-1 bg-amber-600 hover:bg-amber-700 text-white" onClick={handlePromote}>
+                  <GraduationCap className="w-4 h-4 mr-2" /> Confirm Promotion
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
         {/* Backup & Restore */}
         <Card>
           <CardHeader><CardTitle className="flex items-center gap-2"><Database className="w-5 h-5" /> Backup & Restore</CardTitle></CardHeader>
@@ -371,6 +445,7 @@ const AdminSettings = () => {
                 </p>
                 <p className="text-sm text-muted-foreground">Auto-detected: {getAutoTerm()} | Year: {new Date().getFullYear()}</p>
                 {currentSession && <p className="text-xs text-muted-foreground">{currentSession.start_date} to {currentSession.end_date}</p>}
+                <p className="text-xs text-green-600 dark:text-green-400 mt-1">✓ Terms auto-switch daily based on dates. Next year's sessions auto-created in November.</p>
               </div>
             </div>
           </CardContent>
