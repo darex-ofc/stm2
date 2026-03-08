@@ -109,6 +109,7 @@ const TeacherProfile = () => {
             </CardContent>
           </Card>
         )}
+        <BiometricEnrollment />
         {/* Signature for Reports */}
         <SignatureManager mode="teacher" />
       </div>

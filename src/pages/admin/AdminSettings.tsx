@@ -14,6 +14,7 @@ import { Progress } from "@/components/ui/progress";
 import AvatarUpload from "@/components/AvatarUpload";
 import ThemeToggle from "@/components/ThemeToggle";
 import SignatureManager from "@/components/SignatureManager";
+import BiometricEnrollment from "@/components/BiometricEnrollment";
 
 const AdminSettings = () => {
   const { user, profile } = useAuth();

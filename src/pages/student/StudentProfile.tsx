@@ -185,6 +185,8 @@ const StudentProfile = () => {
           </Card>
         )}
 
+        <BiometricEnrollment />
+
         {studentProfile && (
           <Card>
             <CardHeader>

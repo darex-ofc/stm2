@@ -279,6 +279,8 @@ const ParentSettings = () => {
           </CardContent>
         </Card>
 
+        <BiometricEnrollment />
+
         {/* Linked Children Card */}
         <Card>
           <CardHeader>
