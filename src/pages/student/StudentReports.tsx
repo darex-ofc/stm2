@@ -145,12 +145,11 @@ const StudentReports = () => {
     });
   };
 
-  const downloadReportCard = async () => {
-    if (!canViewReports || grades.length === 0) return;
+  const generateReportPDF = async () => {
+    if (!canViewReports || grades.length === 0) return null;
 
-    const logoBase64 = await getLogoBase64();
     const level = studentProfile?.level || "o_level";
-    const totalMark = grades.reduce((sum, g) => sum + Number(g.mark), 0);
+    const totalMark = grades.reduce((sum: number, g: any) => sum + Number(g.mark), 0);
 
     // Calculate position
     const studentAverages = new Map<string, number>();
@@ -158,7 +157,6 @@ const StudentReports = () => {
       const prev = studentAverages.get(g.student_id) || 0;
       studentAverages.set(g.student_id, prev + Number(g.mark));
     });
-    // Count subjects per student for average
     const studentSubjectCounts = new Map<string, number>();
     classGrades.forEach(g => {
       studentSubjectCounts.set(g.student_id, (studentSubjectCounts.get(g.student_id) || 0) + 1);
@@ -174,7 +172,7 @@ const StudentReports = () => {
     const dateGenerated = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" });
     const ordinal = (n: number) => n === 1 ? "1st" : n === 2 ? "2nd" : n === 3 ? "3rd" : `${n}th`;
 
-    // Save verification record to database
+    // Save verification record
     await supabase.from("report_verifications").insert({
       serial_number: serialNo,
       student_id: user!.id,
@@ -191,172 +189,283 @@ const StudentReports = () => {
       generated_by: user!.id,
     });
 
-    // QR code links to verification page
     const verifyUrl = `${window.location.origin}/verify-report?serial=${encodeURIComponent(serialNo)}`;
-    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(verifyUrl)}`;
 
-    const getGradeScaleHTML = () => {
-      const scales = [...gradingScales].sort((a, b) => b.max_mark - a.max_mark);
-      if (scales.length > 0) {
-        return scales.map(s => `<td><strong>${s.grade_letter}</strong> ${s.min_mark}-${s.max_mark}</td>`).join("");
+    // Build PDF with jsPDF
+    const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+    const pw = doc.internal.pageSize.getWidth();
+    const primaryColor: [number, number, number] = [10, 61, 98];
+
+    // Try to add logo
+    const logoBase64 = await getLogoBase64();
+    if (logoBase64) {
+      try { doc.addImage(logoBase64, "PNG", 15, 10, 18, 18); } catch {}
+      try { doc.addImage(logoBase64, "PNG", pw - 33, 10, 18, 18); } catch {}
+    }
+
+    // Header
+    doc.setFontSize(18);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...primaryColor);
+    doc.text(schoolInfo.name.toUpperCase(), pw / 2, 18, { align: "center" });
+
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "italic");
+    doc.setTextColor(100);
+    doc.text(`"${schoolInfo.motto}"`, pw / 2, 23, { align: "center" });
+
+    doc.setFontSize(7);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(130);
+    doc.text(`${schoolInfo.address} | Tel: ${schoolInfo.phone}`, pw / 2, 27, { align: "center" });
+
+    // Divider
+    doc.setDrawColor(...primaryColor);
+    doc.setLineWidth(0.6);
+    doc.line(15, 30, pw - 15, 30);
+    doc.line(15, 31, pw - 15, 31);
+
+    // Title bar
+    doc.setFillColor(...primaryColor);
+    doc.rect(15, 34, pw - 30, 9, "F");
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(255);
+    doc.text(`ACADEMIC REPORT CARD — ${termLabel} ${year}`, pw / 2, 40, { align: "center" });
+
+    // Student info grid
+    let y = 48;
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(30);
+
+    const infoRows = [
+      ["Student Name:", profileName || "—", "Student ID:", studentProfile?.student_id || "—"],
+      ["Class:", className || "—", "Level:", level.replace("_", " ").toUpperCase()],
+      ["Date of Birth:", studentProfile?.date_of_birth || "—", "Guardian:", studentProfile?.guardian_name || "—"],
+    ];
+
+    infoRows.forEach(row => {
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(...primaryColor);
+      doc.text(row[0], 16, y);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(30);
+      doc.text(row[1], 50, y);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(...primaryColor);
+      doc.text(row[2], pw / 2 + 5, y);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(30);
+      doc.text(row[3], pw / 2 + 35, y);
+      y += 6;
+    });
+
+    y += 3;
+
+    // Grades table
+    const gradeRows = grades.map((g: any, i: number) => [
+      String(i + 1),
+      g.subjects?.name || "—",
+      g.subjects?.code || "—",
+      String(g.mark),
+      getGradeLetter(Number(g.mark)),
+      g.comment || "—"
+    ]);
+
+    // Add total row
+    gradeRows.push(["", "TOTAL / AVERAGE", "", `${totalMark} / ${avgMark}%`, getGradeLetter(avgMark), ""]);
+
+    autoTable(doc, {
+      head: [["#", "Subject", "Code", "Mark (%)", "Grade", "Comment"]],
+      body: gradeRows,
+      startY: y,
+      styles: { fontSize: 8, cellPadding: 2.5 },
+      headStyles: { fillColor: primaryColor, textColor: 255, fontStyle: "bold", fontSize: 7.5 },
+      alternateRowStyles: { fillColor: [245, 247, 250] },
+      columnStyles: {
+        0: { cellWidth: 8, halign: "center" },
+        3: { halign: "center", fontStyle: "bold" },
+        4: { halign: "center", fontStyle: "bold" },
+        5: { fontSize: 7, textColor: [100, 100, 100] },
+      },
+      margin: { left: 15, right: 15 },
+      didParseCell: (data: any) => {
+        // Style the last row (total)
+        if (data.row.index === gradeRows.length - 1) {
+          data.cell.styles.fillColor = [230, 235, 240];
+          data.cell.styles.fontStyle = "bold";
+        }
+      },
+    });
+
+    y = (doc as any).lastAutoTable.finalY + 6;
+
+    // Summary boxes
+    const summaryItems = [
+      { label: "Average", value: `${avgMark}%` },
+      { label: "Position", value: ordinal(position || 1) },
+      { label: "Out of", value: String(totalStudents) },
+      { label: "Subjects", value: String(grades.length) },
+      { label: "Overall", value: getGradeLetter(avgMark) },
+    ];
+    const boxW = (pw - 30 - 4 * 4) / 5;
+    summaryItems.forEach((item, i) => {
+      const bx = 15 + i * (boxW + 4);
+      doc.setDrawColor(200);
+      doc.setFillColor(250, 250, 252);
+      doc.roundedRect(bx, y, boxW, 16, 2, 2, "FD");
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(...primaryColor);
+      doc.text(item.value, bx + boxW / 2, y + 8, { align: "center" });
+      doc.setFontSize(6);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(130);
+      doc.text(item.label.toUpperCase(), bx + boxW / 2, y + 13, { align: "center" });
+    });
+
+    y += 22;
+
+    // Class teacher remark
+    doc.setFillColor(250, 251, 252);
+    doc.setDrawColor(220);
+    doc.roundedRect(15, y, pw - 30, 14, 2, 2, "FD");
+    doc.setFontSize(7);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...primaryColor);
+    doc.text("CLASS TEACHER'S REMARK", 18, y + 4);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(60);
+    doc.setFontSize(8);
+    doc.text(getComment(avgMark), 18, y + 10);
+
+    y += 18;
+
+    // Headmaster remark
+    doc.setFillColor(250, 251, 252);
+    doc.roundedRect(15, y, pw - 30, 14, 2, 2, "FD");
+    doc.setFontSize(7);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...primaryColor);
+    doc.text("HEADMASTER'S REMARK", 18, y + 4);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(180);
+    doc.setFontSize(8);
+    doc.text("________________________________", 18, y + 10);
+
+    y += 18;
+
+    // Grading key
+    const scales = [...gradingScales].sort((a, b) => b.max_mark - a.max_mark);
+    if (scales.length > 0) {
+      doc.setFontSize(6.5);
+      doc.setTextColor(130);
+      const keyStr = scales.map(s => `${s.grade_letter}: ${s.min_mark}-${s.max_mark}`).join("  |  ");
+      doc.text(`Grading Key: ${keyStr}`, 15, y);
+      y += 5;
+    }
+
+    // Signatures
+    const sigY = y + 5;
+    const sigLabels = ["Class Teacher", "Headmaster", "Parent/Guardian"];
+    const sigWidth = (pw - 30 - 20) / 3;
+    sigLabels.forEach((label, i) => {
+      const sx = 15 + i * (sigWidth + 10);
+      doc.setDrawColor(60);
+      doc.setLineWidth(0.3);
+      doc.line(sx, sigY + 12, sx + sigWidth, sigY + 12);
+      doc.setFontSize(7.5);
+      doc.setTextColor(100);
+      doc.text(label, sx + sigWidth / 2, sigY + 16, { align: "center" });
+      doc.setFontSize(6);
+      doc.setTextColor(160);
+      doc.text("Date: ____________", sx + sigWidth / 2, sigY + 20, { align: "center" });
+    });
+
+    y = sigY + 26;
+
+    // QR code section
+    try {
+      const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(verifyUrl)}`;
+      const qrImg = await new Promise<string>((resolve) => {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.onload = () => {
+          const c = document.createElement("canvas");
+          c.width = img.width; c.height = img.height;
+          c.getContext("2d")?.drawImage(img, 0, 0);
+          resolve(c.toDataURL("image/png"));
+        };
+        img.onerror = () => resolve("");
+        img.src = qrUrl;
+      });
+
+      if (qrImg) {
+        doc.setDrawColor(220);
+        doc.setFillColor(250, 251, 252);
+        doc.roundedRect(15, y, pw - 30, 28, 2, 2, "FD");
+        doc.addImage(qrImg, "PNG", 18, y + 2, 24, 24);
+        doc.setFontSize(7);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(...primaryColor);
+        doc.text("VERIFICATION QR CODE", 46, y + 5);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(130);
+        doc.setFontSize(6.5);
+        doc.text(`Scan to verify this report card`, 46, y + 9);
+        doc.text(`Serial: ${serialNo}`, 46, y + 13);
+        doc.text(`Student: ${profileName} (${studentProfile?.student_id || "N/A"})`, 46, y + 17);
+        doc.text(`Generated: ${dateGenerated}`, 46, y + 21);
+        doc.setFontSize(5.5);
+        doc.setTextColor(160);
+        doc.text("Any unauthorized alteration of this document renders it void.", 46, y + 25);
       }
-      return '<td><strong>A</strong> 75-100</td><td><strong>B</strong> 65-74</td><td><strong>C</strong> 50-64</td><td><strong>D</strong> 40-49</td><td><strong>U</strong> 0-39</td>';
-    };
+    } catch {}
 
-    const html = `<!DOCTYPE html>
-<html><head><meta charset="utf-8"><title>Report Card - ${profileName}</title>
-<style>
-  @page { size: A4; margin: 12mm; }
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: 'Georgia', 'Times New Roman', serif; color: #1a1a2e; background: white; font-size: 10pt; }
-  .report { max-width: 210mm; margin: 0 auto; position: relative; padding: 15px; border: 2px solid #0a3d62; }
-  .watermark { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-35deg); font-size: 72pt; color: rgba(10,61,98,0.04); font-weight: bold; letter-spacing: 10px; z-index: 0; pointer-events: none; }
-  .header { display: flex; align-items: center; gap: 15px; border-bottom: 3px double #0a3d62; padding-bottom: 12px; margin-bottom: 12px; }
-  .header-logo { width: 80px; height: 80px; border-radius: 50%; border: 3px solid #0a3d62; object-fit: contain; background: white; padding: 4px; }
-  .header-logo-fallback { width: 80px; height: 80px; border-radius: 50%; border: 3px solid #0a3d62; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #0a3d62, #1e6f9f); color: white; font-weight: bold; font-size: 24pt; }
-  .header-center { flex: 1; text-align: center; }
-  .header-center h1 { font-size: 20pt; letter-spacing: 3px; text-transform: uppercase; color: #0a3d62; margin-bottom: 2px; }
-  .header-center .motto { font-style: italic; color: #555; font-size: 9pt; margin-bottom: 2px; }
-  .header-center .address { font-size: 7.5pt; color: #777; }
-  .serial-box { text-align: right; font-size: 7pt; color: #999; font-family: 'Courier New', monospace; }
-  .report-title { background: linear-gradient(135deg, #0a3d62, #1e6f9f); color: white; text-align: center; padding: 7px; font-size: 13pt; letter-spacing: 4px; text-transform: uppercase; margin-bottom: 12px; border-radius: 2px; }
-  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 20px; margin-bottom: 12px; font-size: 9.5pt; }
-  .info-grid .row { display: flex; gap: 4px; }
-  .info-grid .label { font-weight: bold; color: #0a3d62; min-width: 100px; }
-  .info-grid .value { border-bottom: 1px dotted #ccc; flex: 1; padding-bottom: 1px; }
-  table.grades { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
-  table.grades th { background: #0a3d62; color: white; padding: 7px 5px; text-align: left; font-size: 8.5pt; text-transform: uppercase; letter-spacing: 1px; }
-  table.grades td { padding: 6px 5px; border-bottom: 1px solid #e0e0e0; font-size: 9.5pt; }
-  table.grades tr:nth-child(even) { background: #f8f9fa; }
-  .mark-cell { text-align: center; font-weight: bold; }
-  .grade-a { color: #0a8f3c; } .grade-b { color: #1e6f9f; } .grade-c { color: #b8860b; }
-  .grade-d { color: #cc6600; } .grade-e,.grade-f { color: #cc0000; }
-  .summary-box { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 12px; }
-  .summary-item { text-align: center; padding: 8px; border: 1px solid #ddd; border-radius: 4px; background: #fafafa; }
-  .summary-item .num { font-size: 16pt; font-weight: bold; color: #0a3d62; }
-  .summary-item .lbl { font-size: 7pt; color: #777; text-transform: uppercase; letter-spacing: 1px; }
-  .comment-box { border: 1px solid #ddd; padding: 10px; margin-bottom: 12px; border-radius: 4px; background: #fafbfc; }
-  .comment-box .title { font-weight: bold; color: #0a3d62; font-size: 8.5pt; text-transform: uppercase; margin-bottom: 4px; }
-  .signatures { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 30px; margin-top: 25px; }
-  .sig-block { text-align: center; }
-  .sig-line { border-top: 1px solid #333; padding-top: 4px; font-size: 8.5pt; color: #555; margin-top: 30px; }
-  .sig-date { font-size: 7pt; color: #999; margin-top: 2px; }
-  .footer { text-align: center; margin-top: 15px; padding-top: 8px; border-top: 2px solid #0a3d62; font-size: 7pt; color: #999; }
-  .security-strip { background: repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(10,61,98,0.03) 5px, rgba(10,61,98,0.03) 10px); padding: 4px 10px; text-align: center; font-size: 6.5pt; color: #bbb; font-family: 'Courier New', monospace; margin-top: 8px; border: 1px solid #eee; }
-  .grading-key { font-size: 7.5pt; color: #777; margin-bottom: 8px; }
-  .grading-key td { padding: 2px 6px; border: 1px solid #e0e0e0; }
-   .stamp { position: absolute; bottom: 120px; right: 30px; width: 80px; height: 80px; border: 2px solid rgba(10,61,98,0.15); border-radius: 50%; display: flex; align-items: center; justify-content: center; transform: rotate(-15deg); font-size: 7pt; color: rgba(10,61,98,0.2); font-weight: bold; text-align: center; text-transform: uppercase; }
-   .qr-section { display: flex; align-items: center; gap: 12px; margin-top: 12px; padding: 10px; border: 1px solid #ddd; border-radius: 4px; background: #fafbfc; }
-   .qr-section img { width: 100px; height: 100px; }
-   .qr-section .qr-info { font-size: 7pt; color: #888; line-height: 1.6; }
-   .qr-section .qr-info strong { color: #0a3d62; }
-   @media print { .no-print { display: none; } body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
-</style></head><body>
-<div class="watermark">OFFICIAL</div>
-<div class="report">
-  <div class="serial-box">Serial: ${serialNo}<br/>Date: ${dateGenerated}</div>
-  <div class="header">
-    ${logoBase64 ? `<img src="${logoBase64}" class="header-logo" alt="School Logo" />` : '<div class="header-logo-fallback">SM</div>'}
-    <div class="header-center">
-      <h1>${schoolInfo.name}</h1>
-      <div class="motto">"${schoolInfo.motto}"</div>
-      <div class="address">${schoolInfo.address} | Tel: ${schoolInfo.phone} | Reg: ${schoolInfo.reg}</div>
-    </div>
-    ${logoBase64 ? `<img src="${logoBase64}" class="header-logo" alt="School Logo" />` : '<div class="header-logo-fallback">SM</div>'}
-  </div>
-  
-  <div class="report-title">Academic Report Card — ${termLabel} ${year}</div>
-  
-  <div class="info-grid">
-    <div class="row"><span class="label">Student Name:</span> <span class="value">${profileName || "—"}</span></div>
-    <div class="row"><span class="label">Student ID:</span> <span class="value">${studentProfile?.student_id || "—"}</span></div>
-    <div class="row"><span class="label">Class:</span> <span class="value">${className || "—"}</span></div>
-    <div class="row"><span class="label">Level:</span> <span class="value">${level.replace("_", " ").toUpperCase()}</span></div>
-    <div class="row"><span class="label">Date of Birth:</span> <span class="value">${studentProfile?.date_of_birth || "—"}</span></div>
-    <div class="row"><span class="label">Guardian:</span> <span class="value">${studentProfile?.guardian_name || "—"}</span></div>
-  </div>
-  
-  <table class="grades">
-    <thead><tr><th>#</th><th>Subject</th><th>Code</th><th style="text-align:center">Mark (%)</th><th style="text-align:center">Grade</th><th>Teacher's Comment</th></tr></thead>
-    <tbody>
-      ${grades.map((g, i) => {
-        const grade = getGradeLetter(Number(g.mark));
-        const gc = grade === "A" ? "grade-a" : grade === "B" ? "grade-b" : grade === "C" ? "grade-c" : grade === "D" ? "grade-d" : "grade-f";
-        return `<tr>
-          <td>${i + 1}</td>
-          <td>${g.subjects?.name || "—"}</td>
-          <td>${g.subjects?.code || "—"}</td>
-          <td class="mark-cell">${g.mark}</td>
-          <td class="mark-cell ${gc}"><strong>${grade}</strong></td>
-          <td style="font-size:8.5pt;color:#555">${g.comment || "—"}</td>
-        </tr>`;
-      }).join("")}
-      ${grades.length > 0 ? `<tr style="background:#f0f0f0;font-weight:bold">
-        <td colspan="3" style="text-align:right">Total / Average:</td>
-        <td class="mark-cell">${totalMark} / ${avgMark}%</td>
-        <td class="mark-cell">${getGradeLetter(avgMark)}</td>
-        <td></td>
-      </tr>` : ""}
-    </tbody>
-  </table>
-  
-  <div class="summary-box">
-    <div class="summary-item"><div class="num">${avgMark}%</div><div class="lbl">Average</div></div>
-    <div class="summary-item"><div class="num">${ordinal(position || 1)}</div><div class="lbl">Position</div></div>
-    <div class="summary-item"><div class="num">${totalStudents}</div><div class="lbl">Out of</div></div>
-    <div class="summary-item"><div class="num">${grades.length}</div><div class="lbl">Subjects</div></div>
-    <div class="summary-item"><div class="num">${getGradeLetter(avgMark)}</div><div class="lbl">Overall</div></div>
-  </div>
-  
-  <div class="comment-box">
-    <div class="title">Class Teacher's Remark</div>
-    <p style="font-size:9.5pt">${getComment(avgMark)}</p>
-  </div>
-  
-  <div class="comment-box">
-    <div class="title">Headmaster's Remark</div>
-    <p style="font-size:9.5pt;color:#999">________________________________</p>
-  </div>
-  
-  <table class="grading-key"><tr>${getGradeScaleHTML()}</tr></table>
-  
-  <div class="signatures">
-    <div class="sig-block"><div class="sig-line">Class Teacher</div><div class="sig-date">Date: ____________</div></div>
-    <div class="sig-block"><div class="sig-line">Headmaster</div><div class="sig-date">Date: ____________</div></div>
-    <div class="sig-block"><div class="sig-line">Parent/Guardian</div><div class="sig-date">Date: ____________</div></div>
-  </div>
+    y += 32;
 
-  <div class="stamp">OFFICIAL<br/>DOCUMENT</div>
-  
-  <div class="qr-section">
-    <img src="${qrUrl}" alt="Verification QR Code" />
-    <div class="qr-info">
-      <strong>VERIFICATION QR CODE</strong><br/>
-      Scan to verify this report card at:<br/><strong>${verifyUrl}</strong><br/>
-      Serial: <strong>${serialNo}</strong><br/>
-      Student: <strong>${profileName}</strong> (${studentProfile?.student_id || "N/A"})<br/>
-      Generated: ${dateGenerated}<br/>
-      <em>Any unauthorized alteration of this document renders it void.</em>
-    </div>
-  </div>
-  
-  <div class="security-strip">
-    OFFICIAL ACADEMIC RECORD | Serial: ${serialNo} | Generated: ${dateGenerated} | ${schoolInfo.name} | This document is computer-generated and verified by QR code.
-  </div>
-  
-  <div class="footer">
-    <p>${schoolInfo.name} | ${schoolInfo.address} | Tel: ${schoolInfo.phone}</p>
-    <p>This is an official academic record. Unauthorized reproduction or alteration is a criminal offense.</p>
-  </div>
-  
-  <div class="no-print" style="text-align:center;margin-top:20px;display:flex;gap:10px;justify-content:center">
-    <button onclick="window.print()" style="padding:10px 30px;font-size:14px;background:#0a3d62;color:white;border:none;border-radius:4px;cursor:pointer;">🖨️ Print / Save as PDF</button>
-    <button onclick="window.close()" style="padding:10px 30px;font-size:14px;background:#666;color:white;border:none;border-radius:4px;cursor:pointer;">✕ Close</button>
-  </div>
-</div></body></html>`;
+    // Security strip
+    doc.setFillColor(245, 245, 248);
+    doc.rect(15, y, pw - 30, 6, "F");
+    doc.setFontSize(5);
+    doc.setTextColor(180);
+    doc.text(
+      `OFFICIAL ACADEMIC RECORD | Serial: ${serialNo} | Generated: ${dateGenerated} | ${schoolInfo.name} | Computer-generated and verified by QR code.`,
+      pw / 2, y + 3.5, { align: "center" }
+    );
 
-    const w = window.open("", "_blank");
-    if (w) { w.document.write(html); w.document.close(); }
+    y += 9;
+
+    // Footer
+    doc.setDrawColor(...primaryColor);
+    doc.setLineWidth(0.5);
+    doc.line(15, y, pw - 15, y);
+    doc.setFontSize(6);
+    doc.setTextColor(160);
+    doc.text(`${schoolInfo.name} | ${schoolInfo.address} | Tel: ${schoolInfo.phone}`, pw / 2, y + 4, { align: "center" });
+    doc.text("This is an official academic record. Unauthorized reproduction or alteration is a criminal offense.", pw / 2, y + 8, { align: "center" });
+
+    return { doc, serialNo };
+  };
+
+  const downloadReportCard = async () => {
+    const result = await generateReportPDF();
+    if (!result) return;
+    const filename = `Report_Card_${profileName.replace(/\s+/g, "_")}_${term.toUpperCase()}_${year}.pdf`;
+    result.doc.save(filename);
+  };
+
+  const printReportCard = async () => {
+    const result = await generateReportPDF();
+    if (!result) return;
+    const pdfBlob = result.doc.output("blob");
+    const url = URL.createObjectURL(pdfBlob);
+    const w = window.open(url, "_blank");
+    if (w) {
+      w.onload = () => { w.print(); };
+    }
+    setTimeout(() => URL.revokeObjectURL(url), 30000);
   };
 
   return (
