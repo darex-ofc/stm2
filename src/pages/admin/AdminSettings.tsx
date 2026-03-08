@@ -7,7 +7,7 @@ import { Table, TableHeader, TableHead, TableBody, TableRow, TableCell } from "@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Calendar, CheckCircle, Edit, User, Save, Shield, Lock, Unlock, Download, Upload, AlertTriangle, Database } from "lucide-react";
+import { Calendar, CheckCircle, Edit, User, Save, Shield, Lock, Unlock, Download, Upload, AlertTriangle, Database, BarChart3 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { Progress } from "@/components/ui/progress";
@@ -37,6 +37,10 @@ const AdminSettings = () => {
   const [pendingBackupData, setPendingBackupData] = useState<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // DB usage stats
+  const [dbStats, setDbStats] = useState<Record<string, number>>({});
+  const [loadingStats, setLoadingStats] = useState(false);
+
   useEffect(() => {
     if (profile) { setFullName(profile.full_name || ""); setAvatarUrl(profile.avatar_url || null); }
   }, [profile]);
@@ -52,6 +56,26 @@ const AdminSettings = () => {
     supabase.from("system_settings").select("*").eq("key", "reports_locked").single()
       .then(({ data }) => { if (data) setReportsLocked(data.value === "true"); });
   }, []);
+
+  // Fetch DB usage stats
+  const fetchDbStats = async () => {
+    setLoadingStats(true);
+    const tables = [
+      "profiles", "user_roles", "student_profiles", "teacher_profiles",
+      "classes", "subjects", "grades", "monthly_tests", "attendance",
+      "fee_records", "announcements", "messages", "applications",
+      "staff_gallery", "homepage_updates", "petty_cash", "scholarships",
+    ];
+    const counts: Record<string, number> = {};
+    await Promise.all(tables.map(async (t) => {
+      const { count } = await supabase.from(t).select("*", { count: "exact", head: true });
+      counts[t] = count || 0;
+    }));
+    setDbStats(counts);
+    setLoadingStats(false);
+  };
+
+  useEffect(() => { fetchDbStats(); }, []);
 
   const toggleReportsLock = async () => {
     const newValue = !reportsLocked;
@@ -79,8 +103,27 @@ const AdminSettings = () => {
   useEffect(() => { fetchSessions(); }, []);
 
   const handleSetCurrent = async (id: string) => {
-    await supabase.from("academic_sessions").update({ is_current: false }).neq("id", "none");
-    await supabase.from("academic_sessions").update({ is_current: true }).eq("id", id);
+    // First unset ALL current sessions, then set the selected one
+    const { error: unsetError } = await supabase
+      .from("academic_sessions")
+      .update({ is_current: false })
+      .eq("is_current", true);
+    
+    if (unsetError) {
+      toast({ title: "Error", description: unsetError.message, variant: "destructive" });
+      return;
+    }
+
+    const { error: setError } = await supabase
+      .from("academic_sessions")
+      .update({ is_current: true })
+      .eq("id", id);
+    
+    if (setError) {
+      toast({ title: "Error", description: setError.message, variant: "destructive" });
+      return;
+    }
+
     toast({ title: "Current Session Updated" });
     fetchSessions();
   };
@@ -191,6 +234,10 @@ const AdminSettings = () => {
     return "Holiday Period";
   };
 
+  const totalRows = Object.values(dbStats).reduce((a, b) => a + b, 0);
+  const dbLimit = 500000; // Approximate free-tier limit
+  const dbUsagePercent = Math.min((totalRows / dbLimit) * 100, 100);
+
   return (
     <DashboardLayout role="admin">
       <div className="space-y-6">
@@ -252,12 +299,48 @@ const AdminSettings = () => {
           </CardContent>
         </Card>
 
+        {/* Database Usage */}
+        <Card>
+          <CardHeader><CardTitle className="flex items-center gap-2"><BarChart3 className="w-5 h-5" /> Database Usage</CardTitle></CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-2xl font-bold text-foreground">{totalRows.toLocaleString()}</p>
+                <p className="text-sm text-muted-foreground">Total records across all tables</p>
+              </div>
+              <Button variant="outline" size="sm" onClick={fetchDbStats} disabled={loadingStats}>
+                {loadingStats ? "Refreshing..." : "Refresh"}
+              </Button>
+            </div>
+            <div>
+              <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                <span>{totalRows.toLocaleString()} rows</span>
+                <span>{dbLimit.toLocaleString()} limit</span>
+              </div>
+              <Progress value={dbUsagePercent} className="h-2" />
+              <p className="text-xs text-muted-foreground mt-1">{dbUsagePercent.toFixed(1)}% used</p>
+            </div>
+            {Object.keys(dbStats).length > 0 && (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                {Object.entries(dbStats)
+                  .sort(([, a], [, b]) => b - a)
+                  .map(([table, count]) => (
+                    <div key={table} className="flex items-center justify-between p-2 rounded-lg bg-muted/50 text-sm">
+                      <span className="text-muted-foreground truncate">{table.replace(/_/g, " ")}</span>
+                      <span className="font-mono font-bold text-foreground ml-2">{count}</span>
+                    </div>
+                  ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Backup & Restore */}
         <Card>
           <CardHeader><CardTitle className="flex items-center gap-2"><Database className="w-5 h-5" /> Backup & Restore</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Create a full backup of all school data or restore from a previous backup file. Backups include all students, teachers, grades, attendance, fees, and system settings.
+              Create a full backup of all school data or restore from a previous backup file.
             </p>
             {restoring && (
               <div className="space-y-2">
