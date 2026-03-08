@@ -320,8 +320,22 @@ const StudentReports = () => {
 
   <div class="stamp">OFFICIAL<br/>DOCUMENT</div>
   
+  <div class="qr-section">
+    <img src="${qrUrl}" alt="Verification QR Code" />
+    <div class="qr-info">
+      <strong>VERIFICATION QR CODE</strong><br/>
+      Scan this code to verify the authenticity of this report card.<br/>
+      Serial: <strong>${serialNo}</strong><br/>
+      Student: <strong>${profileName}</strong> (${studentProfile?.student_id || "N/A"})<br/>
+      Class: <strong>${className}</strong> | ${termLabel} ${year}<br/>
+      Average: <strong>${avgMark}%</strong> | Grade: <strong>${getGradeLetter(avgMark)}</strong><br/>
+      Generated: ${dateGenerated}<br/>
+      <em>Any unauthorized alteration of this document renders it void.</em>
+    </div>
+  </div>
+  
   <div class="security-strip">
-    OFFICIAL ACADEMIC RECORD | Serial: ${serialNo} | Generated: ${dateGenerated} | ${schoolInfo.name} | This document is computer-generated. Any unauthorized alteration renders it void.
+    OFFICIAL ACADEMIC RECORD | Serial: ${serialNo} | Generated: ${dateGenerated} | ${schoolInfo.name} | This document is computer-generated and verified by QR code.
   </div>
   
   <div class="footer">
@@ -330,7 +344,7 @@ const StudentReports = () => {
   </div>
   
   <div class="no-print" style="text-align:center;margin-top:20px;display:flex;gap:10px;justify-content:center">
-    <button onclick="window.print()" style="padding:10px 30px;font-size:14px;background:#0a3d62;color:white;border:none;border-radius:4px;cursor:pointer;">🖨️ Print Report Card</button>
+    <button onclick="window.print()" style="padding:10px 30px;font-size:14px;background:#0a3d62;color:white;border:none;border-radius:4px;cursor:pointer;">🖨️ Print / Save as PDF</button>
     <button onclick="window.close()" style="padding:10px 30px;font-size:14px;background:#666;color:white;border:none;border-radius:4px;cursor:pointer;">✕ Close</button>
   </div>
 </div></body></html>`;
