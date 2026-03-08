@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableHeader, TableHead, TableBody, TableRow, TableCell } from "@/components/ui/table";
@@ -12,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Users, Search, Download, ArrowUpDown, Eye, Phone, Mail,
   Heart, Calendar, CreditCard, BookOpen, ClipboardCheck, MapPin,
-  AlertTriangle, Droplets, Shield
+  AlertTriangle, Droplets, Shield, Edit, Save, Star
 } from "lucide-react";
 
 type SortField = "name" | "student_id" | "form" | "guardian";
