@@ -16,6 +16,8 @@ interface Props {
   years: number[];
   onAdded: () => void;
   classes?: any[];
+  existingRecords?: any[];
+  onPayExisting?: (record: any) => void;
 }
 
 const TERMS = [
@@ -24,7 +26,7 @@ const TERMS = [
   { value: "term_3", label: "Term 3" },
 ];
 
-const AddFeeForm = ({ students, studentProfiles, feeStructure, zigRate, years, onAdded, classes }: Props) => {
+const AddFeeForm = ({ students, studentProfiles, feeStructure, zigRate, years, onAdded, classes, existingRecords = [], onPayExisting }: Props) => {
   const { toast } = useToast();
   const [selectedStudent, setSelectedStudent] = useState("");
   const [selectedTerms, setSelectedTerms] = useState<string[]>([getTermFromDate()]);
@@ -42,6 +44,21 @@ const AddFeeForm = ({ students, studentProfiles, feeStructure, zigRate, years, o
   const perTermDue = fees.tuition + fees.levy;
   const totalDue = perTermDue * selectedTerms.length;
 
+  // Check for existing records for selected student/term/year
+  const existingForSelection = selectedStudent
+    ? selectedTerms.map((term) => {
+        const existing = existingRecords.find(
+          (r) => r.student_id === selectedStudent && r.term === term && r.academic_year === parseInt(feeYear)
+        );
+        return existing ? { term, record: existing } : null;
+      }).filter(Boolean) as { term: string; record: any }[]
+    : [];
+
+  const hasExistingConflicts = existingForSelection.length > 0;
+  const termsWithoutConflicts = selectedTerms.filter(
+    (t) => !existingForSelection.some((e) => e.term === t)
+  );
+
   const toggleTerm = (term: string) => {
     setSelectedTerms((prev) =>
       prev.includes(term) ? prev.filter((t) => t !== term) : [...prev, term]
@@ -53,8 +70,11 @@ const AddFeeForm = ({ students, studentProfiles, feeStructure, zigRate, years, o
       toast({ title: "Error", description: "Select a student.", variant: "destructive" });
       return;
     }
-    if (selectedTerms.length === 0) {
-      toast({ title: "Error", description: "Select at least one term.", variant: "destructive" });
+    // Only create records for terms that don't already exist
+    const termsToCreate = hasExistingConflicts ? termsWithoutConflicts : selectedTerms;
+    if (termsToCreate.length === 0) {
+      toast({ title: "Error", description: "All selected terms already have records. Use 'Record Payment' to add payments.", variant: "destructive" });
+      setIsSubmitting(false);
       return;
     }
 
@@ -62,10 +82,10 @@ const AddFeeForm = ({ students, studentProfiles, feeStructure, zigRate, years, o
     const paidRaw = Number(amountPaid) || 0;
     const totalPaidUSD = currency === "ZIG" ? paidRaw / zigRate : paidRaw;
 
-    // Split payment evenly across selected terms
-    const perTermPaid = selectedTerms.length > 0 ? totalPaidUSD / selectedTerms.length : 0;
+    // Split payment evenly across terms being created
+    const perTermPaid = termsToCreate.length > 0 ? totalPaidUSD / termsToCreate.length : 0;
 
-    const records = selectedTerms.map((term) => ({
+    const records = termsToCreate.map((term) => ({
       student_id: selectedStudent,
       term: term as any,
       academic_year: parseInt(feeYear),
@@ -203,11 +223,39 @@ const AddFeeForm = ({ students, studentProfiles, feeStructure, zigRate, years, o
             </div>
           )}
         </div>
+
+        {/* Warning for existing records */}
+        {hasExistingConflicts && selectedStudent && (
+          <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/30 text-sm space-y-2">
+            <p className="font-medium text-destructive">⚠️ Records already exist for this student:</p>
+            {existingForSelection.map(({ term, record }) => {
+              const balance = Number(record.amount_due) - Number(record.amount_paid);
+              return (
+                <div key={term} className="flex items-center justify-between">
+                  <span className="text-foreground">
+                    {term.replace("_", " ").toUpperCase()} {feeYear} — Balance: <span className="font-bold text-destructive">${balance.toFixed(2)}</span>
+                  </span>
+                  {onPayExisting && balance > 0 && (
+                    <Button size="sm" variant="outline" onClick={() => onPayExisting(record)}>
+                      Record Payment
+                    </Button>
+                  )}
+                </div>
+              );
+            })}
+            {termsWithoutConflicts.length > 0 && (
+              <p className="text-xs text-muted-foreground">
+                Only {termsWithoutConflicts.map(t => t.replace("_", " ").toUpperCase()).join(", ")} will be created as new records.
+              </p>
+            )}
+          </div>
+        )}
+
         <div className="flex flex-wrap gap-3">
           <Input placeholder="Notes (optional)" value={notes} onChange={(e) => setNotes(e.target.value)} className="flex-1 min-w-[200px]" />
-          <Button onClick={handleAdd} disabled={isSubmitting}>
+          <Button onClick={handleAdd} disabled={isSubmitting || (hasExistingConflicts && termsWithoutConflicts.length === 0)}>
             <Plus className="w-4 h-4 mr-1" />
-            {isSubmitting ? "Adding..." : `Add ${selectedTerms.length > 1 ? `${selectedTerms.length} Records` : "Record"}`}
+            {isSubmitting ? "Adding..." : hasExistingConflicts && termsWithoutConflicts.length === 0 ? "Records Already Exist" : `Add ${termsWithoutConflicts.length > 0 && hasExistingConflicts ? `${termsWithoutConflicts.length} New Record${termsWithoutConflicts.length > 1 ? "s" : ""}` : selectedTerms.length > 1 ? `${selectedTerms.length} Records` : "Record"}`}
           </Button>
         </div>
       </CardContent>
