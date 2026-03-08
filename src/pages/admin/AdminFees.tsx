@@ -89,6 +89,7 @@ const AdminFees = () => {
   useEffect(() => { fetchData(); }, []);
 
   const getStudentName = (id: string) => students.find((s) => s.user_id === id)?.full_name || "Unknown";
+  const getStudentEmail = (id: string) => students.find((s) => s.user_id === id)?.email || "";
   const getStudentClassName = (studentId: string) => {
     const sp = studentProfiles.find((s: any) => s.user_id === studentId);
     if (!sp?.class_id) return undefined;
@@ -287,7 +288,7 @@ const AdminFees = () => {
         <FeeStatsCards totalDue={totalDue} totalPaid={totalPaid} zigRate={zigRate} />
         {showCharts && <FeeCharts records={filtered} getStudentName={getStudentName} />}
 
-        <AddFeeForm students={students} studentProfiles={studentProfiles} feeStructure={feeStructure} zigRate={zigRate} years={years} onAdded={fetchData} />
+        <AddFeeForm students={students} studentProfiles={studentProfiles} feeStructure={feeStructure} zigRate={zigRate} years={years} onAdded={fetchData} classes={classes} />
 
         {/* Filters */}
         <Card>
@@ -522,7 +523,7 @@ const AdminFees = () => {
           </TabsContent>
         </Tabs>
 
-        <PaymentDialog record={payRecord} open={payOpen} onOpenChange={setPayOpen} zigRate={zigRate} getStudentName={getStudentName} onPaid={fetchData} />
+        <PaymentDialog record={payRecord} open={payOpen} onOpenChange={setPayOpen} zigRate={zigRate} getStudentName={getStudentName} getStudentEmail={getStudentEmail} getStudentClass={getStudentClassName} onPaid={fetchData} />
 
         {/* Edit Dialog */}
         <Dialog open={editOpen} onOpenChange={setEditOpen}>

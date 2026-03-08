@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { PAYMENT_METHODS, generateReceipt } from "./FeeConstants";
+import { PAYMENT_METHODS, generateReceipt, methodLabel } from "./FeeConstants";
 import ReceiptImageUpload from "@/components/ReceiptImageUpload";
 
 interface Props {
@@ -13,10 +13,12 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   zigRate: number;
   getStudentName: (id: string) => string;
+  getStudentEmail: (id: string) => string;
+  getStudentClass?: (id: string) => string | undefined;
   onPaid: () => void;
 }
 
-const PaymentDialog = ({ record, open, onOpenChange, zigRate, getStudentName, onPaid }: Props) => {
+const PaymentDialog = ({ record, open, onOpenChange, zigRate, getStudentName, getStudentEmail, getStudentClass, onPaid }: Props) => {
   const { toast } = useToast();
   const [amount, setAmount] = useState("");
   const [currency, setCurrency] = useState("USD");
@@ -48,6 +50,29 @@ const PaymentDialog = ({ record, open, onOpenChange, zigRate, getStudentName, on
     if (error) toast({ title: "Error", description: error.message, variant: "destructive" });
     else {
       toast({ title: "Payment Recorded", description: `Receipt: ${receipt} — $${payUSD.toFixed(2)} paid` });
+
+      // Send receipt email to student
+      const studentEmail = getStudentEmail(record.student_id);
+      if (studentEmail) {
+        supabase.functions.invoke("send-branded-email", {
+          body: {
+            email: studentEmail,
+            type: "fee_receipt",
+            receipt_data: {
+              studentName: getStudentName(record.student_id),
+              receiptNumber: receipt,
+              academicYear: record.academic_year,
+              term: record.term,
+              amountDue: Number(record.amount_due),
+              amountPaid: newPaid,
+              paymentMethod: methodLabel(method),
+              paymentDate: new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
+              className: getStudentClass?.(record.student_id),
+            },
+          },
+        }).catch(() => {});
+      }
+
       setAmount("");
       setReceiptImage(null);
       onOpenChange(false);

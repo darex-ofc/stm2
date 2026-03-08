@@ -262,6 +262,123 @@ function resultsContent(portalUrl: string): string {
   ].join('\n');
 }
 
+function receiptContent(data: {
+  studentName: string;
+  receiptNumber: string;
+  academicYear: number;
+  term: string;
+  amountDue: number;
+  amountPaid: number;
+  paymentMethod: string;
+  paymentDate: string;
+  className?: string;
+}): string {
+  const balance = data.amountDue - data.amountPaid;
+  const isPaid = balance <= 0;
+  const termLabel = data.term.replace('_', ' ').toUpperCase();
+  return [
+    '<h2 style="color:#2c3e50;font-size:22px;',
+    'font-weight:600;margin:0 0 16px;',
+    'text-align:center;">Payment Receipt</h2>',
+    '<p style="color:#555;font-size:15px;',
+    'line-height:1.7;margin:0 0 24px;',
+    'text-align:center;">',
+    `Dear <strong>${data.studentName}</strong>,`,
+    ' your fee payment has been recorded.',
+    '</p>',
+    // Receipt card
+    '<div style="background:#f8f9fa;',
+    'border:1px solid #e9ecef;',
+    'border-radius:12px;padding:24px;',
+    'margin-bottom:24px;">',
+    // Receipt number
+    '<div style="text-align:center;',
+    'margin-bottom:16px;">',
+    '<p style="color:#888;font-size:11px;',
+    'text-transform:uppercase;',
+    'letter-spacing:1px;margin:0 0 4px;">',
+    'Receipt Number</p>',
+    '<p style="color:#0a3d62;font-size:20px;',
+    'font-weight:800;letter-spacing:2px;',
+    `font-family:monospace;margin:0;">${data.receiptNumber}</p>`,
+    '</div>',
+    // Details grid
+    '<table width="100%" cellpadding="0"',
+    ' cellspacing="0" style="font-size:14px;">',
+    '<tr><td style="padding:8px 0;color:#888;">',
+    'Student</td>',
+    '<td style="padding:8px 0;text-align:right;',
+    `font-weight:600;">${data.studentName}</td></tr>`,
+    data.className ? [
+      '<tr><td style="padding:8px 0;color:#888;">',
+      'Class</td>',
+      '<td style="padding:8px 0;text-align:right;',
+      `font-weight:600;">${data.className}</td></tr>`,
+    ].join('\n') : '',
+    '<tr><td style="padding:8px 0;color:#888;">',
+    'Year / Term</td>',
+    '<td style="padding:8px 0;text-align:right;',
+    `font-weight:600;">${data.academicYear} &mdash; ${termLabel}</td></tr>`,
+    '<tr><td style="padding:8px 0;color:#888;">',
+    'Payment Method</td>',
+    '<td style="padding:8px 0;text-align:right;',
+    `font-weight:600;">${data.paymentMethod}</td></tr>`,
+    '<tr><td style="padding:8px 0;color:#888;">',
+    'Date</td>',
+    '<td style="padding:8px 0;text-align:right;',
+    `font-weight:600;">${data.paymentDate}</td></tr>`,
+    '</table>',
+    // Divider
+    '<hr style="border:none;border-top:1px dashed #ccc;',
+    'margin:12px 0;" />',
+    // Amounts
+    '<table width="100%" cellpadding="0"',
+    ' cellspacing="0" style="font-size:14px;">',
+    '<tr><td style="padding:6px 0;color:#888;">',
+    'Total Due</td>',
+    '<td style="padding:6px 0;text-align:right;',
+    `font-weight:600;">$${data.amountDue.toFixed(2)}</td></tr>`,
+    '<tr><td style="padding:6px 0;color:#888;">',
+    'Amount Paid</td>',
+    '<td style="padding:6px 0;text-align:right;',
+    'font-weight:600;color:#16a34a;">',
+    `$${data.amountPaid.toFixed(2)}</td></tr>`,
+    '<tr><td style="padding:10px 0;',
+    'border-top:2px solid #333;font-weight:700;">',
+    'Balance</td>',
+    '<td style="padding:10px 0;text-align:right;',
+    'border-top:2px solid #333;font-weight:700;',
+    `color:${isPaid ? '#16a34a' : '#dc2626'};">`,
+    `$${balance.toFixed(2)}</td></tr>`,
+    '</table>',
+    '</div>',
+    // Status badge
+    isPaid ? [
+      '<div style="text-align:center;margin:0 0 24px;">',
+      '<span style="display:inline-block;',
+      'border:3px solid #16a34a;color:#16a34a;',
+      'font-size:16px;font-weight:800;',
+      'letter-spacing:4px;padding:6px 24px;',
+      'border-radius:8px;text-transform:uppercase;">',
+      'Paid in Full</span></div>',
+    ].join('\n') : [
+      '<div style="background:#fff8e1;',
+      'border:1px solid #ffe082;',
+      'border-radius:12px;padding:16px;',
+      'margin-bottom:24px;text-align:center;">',
+      '<p style="color:#f57f17;font-size:14px;',
+      'font-weight:600;margin:0;">',
+      `Outstanding Balance: $${balance.toFixed(2)}</p>`,
+      '</div>',
+    ].join('\n'),
+    '<div style="text-align:center;">',
+    '<p style="color:#888;font-size:12px;margin:0;">',
+    'This is an automated receipt.',
+    ' Contact school admin for queries.</p>',
+    '</div>',
+  ].join('\n');
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -356,6 +473,17 @@ serve(async (req) => {
 
       subject = `Verification Code - ${SCHOOL}`;
       html = wrap(otpContent(otp, full_name));
+
+    } else if (type === 'fee_receipt') {
+      const { receipt_data } = body;
+      if (!receipt_data) {
+        return new Response(
+          JSON.stringify({ error: 'Receipt data is required' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        );
+      }
+      subject = `Fee Payment Receipt ${receipt_data.receiptNumber} - ${SCHOOL}`;
+      html = wrap(receiptContent(receipt_data));
 
     } else {
       return new Response(
