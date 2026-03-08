@@ -191,7 +191,7 @@ const ParentSettings = () => {
             <div className="flex items-center gap-4">
               <AvatarUpload
                 currentUrl={avatarUrl}
-                onUpload={(url) => setAvatarUrl(url)}
+                onUploaded={(url) => setAvatarUrl(url)}
                 userId={user?.id || ""}
               />
               <div className="flex-1 space-y-3">
