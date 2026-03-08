@@ -27,6 +27,7 @@ const ParentReports = () => {
   const [term, setTerm] = useState("term_1");
   const [year, setYear] = useState(new Date().getFullYear());
   const [loading, setLoading] = useState(true);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const [schoolInfo] = useState({
     name: "St. Mary's High School",
