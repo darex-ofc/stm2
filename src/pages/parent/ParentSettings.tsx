@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import DashboardLayout from "@/components/DashboardLayout";
@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import AvatarUpload from "@/components/AvatarUpload";
+import PhoneInput, { normalizePhone } from "@/components/PhoneInput";
 import { Settings, Unlink, UserPlus, Link2, Loader2, AlertCircle, Save } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
@@ -96,6 +97,20 @@ const ParentSettings = () => {
     setUnlinkId(null);
   };
 
+  const sendLinkNotification = async (studentUserId: string, parentName: string) => {
+    try {
+      await supabase.from("notifications").insert({
+        user_id: studentUserId,
+        title: "🔗 Parent Account Linked",
+        message: `${parentName} has linked to your account as a parent/guardian. They can now view your grades, attendance, and fee records.`,
+        type: "parent_link",
+        metadata: { parent_id: user?.id, parent_name: parentName },
+      });
+    } catch (err) {
+      console.error("Failed to send link notification:", err);
+    }
+  };
+
   const handleLinkChild = async () => {
     if (!user || !childStudentId.trim()) return;
     setLinking(true);
@@ -120,13 +135,16 @@ const ParentSettings = () => {
       return;
     }
 
-    // Verify guardian info
-    const parentPhone = phone.trim().replace(/\s+/g, "");
+    // Verify guardian info - normalize both numbers for comparison
+    const parentPhone = phone.trim().replace(/[\s\-\(\)]/g, "");
     const parentEmail = user.email?.trim().toLowerCase() || "";
-    const studentGuardianPhone = (studentProfile.guardian_phone || "").trim().replace(/\s+/g, "");
+    const studentGuardianPhone = (studentProfile.guardian_phone || "").trim().replace(/[\s\-\(\)]/g, "");
     const studentGuardianEmail = (studentProfile.guardian_email || "").trim().toLowerCase();
 
-    const phoneMatch = parentPhone && studentGuardianPhone && parentPhone.includes(studentGuardianPhone.slice(-9));
+    // Compare last 9 digits for phone match (handles different country code formats)
+    const parentLast9 = parentPhone.replace(/\D/g, "").slice(-9);
+    const guardianLast9 = studentGuardianPhone.replace(/\D/g, "").slice(-9);
+    const phoneMatch = parentLast9.length >= 9 && guardianLast9.length >= 9 && parentLast9 === guardianLast9;
     const emailMatch = parentEmail && studentGuardianEmail && parentEmail === studentGuardianEmail;
 
     if (!phoneMatch && !emailMatch) {
@@ -148,7 +166,9 @@ const ParentSettings = () => {
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {
-      toast({ title: "Child Linked!", description: "The student has been linked to your account." });
+      // Send notification to the student
+      await sendLinkNotification(studentProfile.user_id, fullName || profile?.full_name || "A parent");
+      toast({ title: "Child Linked!", description: "The student has been linked and notified." });
       setChildStudentId("");
       setChildLookup(null);
       setLinkDialogOpen(false);
@@ -202,7 +222,7 @@ const ParentSettings = () => {
                 </div>
                 <div>
                   <label className="text-sm font-medium text-foreground">Phone</label>
-                  <Input value={phone} onChange={e => setPhone(e.target.value)} placeholder="+263 7X XXX XXXX" />
+                  <PhoneInput value={phone} onChange={setPhone} />
                 </div>
               </div>
             </div>
