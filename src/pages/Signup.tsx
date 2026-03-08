@@ -349,7 +349,7 @@ const Signup = () => {
                       <form onSubmit={handleSignup} className="space-y-4">
                         <div>
                           <label className="text-sm font-medium text-foreground">Access Code</label>
-                          <Input placeholder="Enter your access code" value={accessCode} onChange={e => setAccessCode(e.target.value)} required autoFocus />
+                          <Input placeholder="Enter your access code" value={accessCode} onChange={e => setAccessCode(e.target.value)} required />
                         </div>
                         <div>
                           <label className="text-sm font-medium text-foreground">Full Name</label>

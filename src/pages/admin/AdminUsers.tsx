@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Users, Search, GraduationCap, BookOpen, Shield, Trash2, Eye, ArrowUpDown, Mail, Phone, Save, Edit, UserX, UserCheck, Link2, Unlink, UserPlus } from "lucide-react";
+import { Users, Search, GraduationCap, BookOpen, Shield, Trash2, Eye, ArrowUpDown, Mail, Phone, Save, Edit, UserX, UserCheck, Link2, Unlink, UserPlus, CheckSquare, Square } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import ExportDropdown from "@/components/ExportDropdown";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -30,6 +31,7 @@ const AdminUsers = () => {
   const [saving, setSaving] = useState(false);
   const [linkStudentId, setLinkStudentId] = useState("");
   const [linking, setLinking] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const fetchData = async () => {
     setLoading(true);
@@ -183,10 +185,55 @@ const AdminUsers = () => {
     </TableHead>
   );
 
+  const toggleSelect = (userId: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(userId)) next.delete(userId); else next.add(userId);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = (data: any[]) => {
+    const ids = data.map(u => u.user_id);
+    const allSelected = ids.every(id => selectedIds.has(id));
+    if (allSelected) {
+      setSelectedIds(prev => { const next = new Set(prev); ids.forEach(id => next.delete(id)); return next; });
+    } else {
+      setSelectedIds(prev => { const next = new Set(prev); ids.forEach(id => next.add(id)); return next; });
+    }
+  };
+
+  const handleBatchDelete = async () => {
+    const nonAdmins = users.filter(u => selectedIds.has(u.user_id) && u.role !== "admin");
+    if (nonAdmins.length === 0) { toast({ title: "No users to delete", description: "Admin accounts cannot be batch deleted.", variant: "destructive" }); return; }
+    if (!confirm(`Remove ${nonAdmins.length} user(s)? This will delete their roles and profiles.`)) return;
+    await Promise.all(nonAdmins.map(u => Promise.all([
+      supabase.from("user_roles").delete().eq("user_id", u.user_id),
+      supabase.from("student_profiles").delete().eq("user_id", u.user_id),
+      supabase.from("teacher_profiles").delete().eq("user_id", u.user_id),
+    ])));
+    toast({ title: `${nonAdmins.length} users removed` });
+    setSelectedIds(new Set());
+    fetchData();
+  };
+
+  const handleBatchDeactivate = async () => {
+    const studentIds = users.filter(u => selectedIds.has(u.user_id) && u.role === "student").map(u => u.user_id);
+    if (studentIds.length === 0) { toast({ title: "No students selected", variant: "destructive" }); return; }
+    if (!confirm(`Deactivate ${studentIds.length} student(s)?`)) return;
+    await Promise.all(studentIds.map(id => supabase.from("student_profiles").update({ is_active: false }).eq("user_id", id)));
+    toast({ title: `${studentIds.length} students deactivated` });
+    setSelectedIds(new Set());
+    fetchData();
+  };
+
   const UserTable = ({ data, showRole = true }: { data: any[]; showRole?: boolean }) => (
     <Table>
       <TableHeader>
         <TableRow>
+          <TableHead className="w-10">
+            <Checkbox checked={data.length > 0 && data.every(u => selectedIds.has(u.user_id))} onCheckedChange={() => toggleSelectAll(data)} />
+          </TableHead>
           <TableHead className="w-12"></TableHead>
           <SortHeader field="full_name">Name</SortHeader>
           <TableHead>Email</TableHead>
@@ -198,11 +245,14 @@ const AdminUsers = () => {
       </TableHeader>
       <TableBody>
         {loading ? (
-          <TableRow><TableCell colSpan={showRole ? 7 : 6} className="text-center py-8 text-muted-foreground">Loading...</TableCell></TableRow>
+          <TableRow><TableCell colSpan={showRole ? 8 : 7} className="text-center py-8 text-muted-foreground">Loading...</TableCell></TableRow>
         ) : sorted(data).length === 0 ? (
-          <TableRow><TableCell colSpan={showRole ? 7 : 6} className="text-center py-8 text-muted-foreground">No users found.</TableCell></TableRow>
+          <TableRow><TableCell colSpan={showRole ? 8 : 7} className="text-center py-8 text-muted-foreground">No users found.</TableCell></TableRow>
         ) : sorted(data).map(u => (
-          <TableRow key={u.id} className={u.studentProfile?.is_active === false ? "opacity-50 bg-destructive/5" : ""}>
+          <TableRow key={u.id} className={`${u.studentProfile?.is_active === false ? "opacity-50 bg-destructive/5" : ""} ${selectedIds.has(u.user_id) ? "bg-primary/5" : ""}`}>
+            <TableCell>
+              <Checkbox checked={selectedIds.has(u.user_id)} onCheckedChange={() => toggleSelect(u.user_id)} />
+            </TableCell>
             <TableCell>
               {u.avatar_url ? (
                 <img src={u.avatar_url} alt={u.full_name} className="w-8 h-8 rounded-full object-cover border border-border" />
@@ -416,9 +466,23 @@ const AdminUsers = () => {
           ))}
         </div>
 
-        <div className="relative max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input placeholder="Search users..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="relative max-w-sm flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input placeholder="Search users..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
+          </div>
+          {selectedIds.size > 0 && (
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-muted-foreground">{selectedIds.size} selected</span>
+              <Button variant="destructive" size="sm" onClick={handleBatchDelete}>
+                <Trash2 className="w-4 h-4 mr-1" /> Delete
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleBatchDeactivate}>
+                <UserX className="w-4 h-4 mr-1" /> Deactivate
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => setSelectedIds(new Set())}>Clear</Button>
+            </div>
+          )}
         </div>
 
         <Tabs defaultValue="all">
