@@ -169,8 +169,9 @@ const AdminUsers = () => {
     else { setSortField(field); setSortDir("asc"); }
   };
 
-  const filterByRole = (role: string) => users.filter(u => u.role === role && ((u.full_name || "").toLowerCase().includes(search.toLowerCase()) || (u.email || "").toLowerCase().includes(search.toLowerCase())));
-  const allFiltered = users.filter(u => (u.full_name || "").toLowerCase().includes(search.toLowerCase()) || (u.email || "").toLowerCase().includes(search.toLowerCase()));
+  const filterByRole = (role: string) => users.filter(u => u.role === role && u.studentProfile?.graduation_status !== "graduated" && ((u.full_name || "").toLowerCase().includes(search.toLowerCase()) || (u.email || "").toLowerCase().includes(search.toLowerCase())));
+  const allFiltered = users.filter(u => u.studentProfile?.graduation_status !== "graduated" && ((u.full_name || "").toLowerCase().includes(search.toLowerCase()) || (u.email || "").toLowerCase().includes(search.toLowerCase())));
+  const graduatedUsers = users.filter(u => u.studentProfile?.graduation_status === "graduated" && ((u.full_name || "").toLowerCase().includes(search.toLowerCase()) || (u.email || "").toLowerCase().includes(search.toLowerCase())));
 
   const studentUsers = users.filter(u => u.role === "student");
 
@@ -491,13 +492,15 @@ const AdminUsers = () => {
             <TabsTrigger value="teachers">Teachers ({stats.teachers})</TabsTrigger>
             <TabsTrigger value="students">Students ({stats.students})</TabsTrigger>
             <TabsTrigger value="parents">Parents ({stats.parents})</TabsTrigger>
-            <TabsTrigger value="admins">Admins ({stats.admins})</TabsTrigger>
-          </TabsList>
+             <TabsTrigger value="admins">Admins ({stats.admins})</TabsTrigger>
+             <TabsTrigger value="graduated">Graduated ({graduatedUsers.length})</TabsTrigger>
+           </TabsList>
           <TabsContent value="all"><Card><CardContent className="p-0"><UserTable data={allFiltered} /></CardContent></Card></TabsContent>
           <TabsContent value="teachers"><Card><CardHeader><CardTitle className="flex items-center gap-2"><BookOpen className="w-5 h-5" /> Teachers</CardTitle></CardHeader><CardContent className="p-0"><UserTable data={filterByRole("teacher")} showRole={false} /></CardContent></Card></TabsContent>
           <TabsContent value="students"><Card><CardHeader><CardTitle className="flex items-center gap-2"><GraduationCap className="w-5 h-5" /> Students</CardTitle></CardHeader><CardContent className="p-0"><UserTable data={filterByRole("student")} showRole={false} /></CardContent></Card></TabsContent>
           <TabsContent value="parents"><Card><CardHeader><CardTitle className="flex items-center gap-2"><UserPlus className="w-5 h-5" /> Parents</CardTitle></CardHeader><CardContent className="p-0"><UserTable data={filterByRole("parent")} showRole={false} /></CardContent></Card></TabsContent>
           <TabsContent value="admins"><Card><CardHeader><CardTitle className="flex items-center gap-2"><Shield className="w-5 h-5" /> Administrators</CardTitle></CardHeader><CardContent className="p-0"><UserTable data={filterByRole("admin")} showRole={false} /></CardContent></Card></TabsContent>
+          <TabsContent value="graduated"><Card><CardHeader><CardTitle className="flex items-center gap-2"><GraduationCap className="w-5 h-5" /> Graduated Students</CardTitle></CardHeader><CardContent className="p-0"><UserTable data={graduatedUsers} showRole={false} /></CardContent></Card></TabsContent>
         </Tabs>
 
         <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
