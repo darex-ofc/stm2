@@ -58,6 +58,7 @@ const Admissions = () => {
     previous_school: "",
     address: "",
     notes: "",
+    national_id: "",
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
