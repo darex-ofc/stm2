@@ -162,7 +162,7 @@ const Admissions = () => {
                 <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
                 <h3 className="font-display text-2xl font-bold text-foreground mb-2">Application Submitted!</h3>
                 <p className="text-muted-foreground mb-6">Thank you for applying to St. Mary's. We will review your application and contact you via email.</p>
-                <Button onClick={() => { setSubmitted(false); setForm({ full_name: "", email: "", phone: "", date_of_birth: "", level: "o_level", form: 1, guardian_name: "", guardian_phone: "", guardian_email: "", previous_school: "", address: "", notes: "" }); }}>
+                <Button onClick={() => { setSubmitted(false); setForm({ full_name: "", email: "", phone: "", date_of_birth: "", level: "o_level", form: 1, guardian_name: "", guardian_phone: "", guardian_email: "", previous_school: "", address: "", notes: "", national_id: "" }); }}>
                   Submit Another Application
                 </Button>
               </CardContent>
