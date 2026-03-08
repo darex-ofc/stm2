@@ -193,6 +193,7 @@ const ParentSettings = () => {
                 currentUrl={avatarUrl}
                 onUploaded={(url) => setAvatarUrl(url)}
                 userId={user?.id || ""}
+                name={fullName}
               />
               <div className="flex-1 space-y-3">
                 <div>
