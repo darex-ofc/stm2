@@ -83,7 +83,7 @@ const GlobalSearch = ({ role }: GlobalSearchProps) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
 
-  const features = role === "admin" ? adminFeatures : role === "teacher" ? teacherFeatures : role === "parent" ? studentFeatures : studentFeatures;
+  const features = role === "admin" ? adminFeatures : role === "teacher" ? teacherFeatures : role === "parent" ? parentFeatures : studentFeatures;
 
   const filtered = query.trim().length === 0
     ? features
