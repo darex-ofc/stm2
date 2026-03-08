@@ -1,73 +1,224 @@
-# Welcome to your Lovable project
+# 🏫 St. Mary's High School — Management System
 
-## Project info
+A comprehensive, full-stack school management platform built with modern web technologies. Manage students, teachers, grades, fees, attendance, reports, messaging, and more — all from one unified dashboard.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+![Vite](https://img.shields.io/badge/Vite-646CFF?logo=vite&logoColor=white)
+![React](https://img.shields.io/badge/React-61DAFB?logo=react&logoColor=black)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-06B6D4?logo=tailwindcss&logoColor=white)
+![Supabase](https://img.shields.io/badge/Supabase-3FCF8E?logo=supabase&logoColor=white)
 
-## How can I edit this code?
+---
 
-There are several ways of editing your application.
+## ✨ Features
 
-**Use Lovable**
+### 🔐 Authentication & Roles
+- Email/OTP-based signup with branded verification emails
+- Role-based access: **Admin**, **Teacher**, **Student**, **Parent**
+- Access code registration system
+- Password reset with branded email templates
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+### 📊 Admin Dashboard
+- Student & teacher management
+- Class and subject configuration
+- Academic session management (terms & years)
+- Fee management with multi-currency support (USD/ZIG)
+- Petty cash & finance tracking
+- Staff gallery management
+- Application review & approval
+- Homepage content updates
+- System-wide announcements
+- User banning & access control
+- Student promotion between forms
+- Backup & restore functionality
 
-Changes made via Lovable will be committed automatically to this repo.
+### 👩‍🏫 Teacher Portal
+- Grade entry with automatic grade letter calculation
+- Monthly test recording
+- Attendance marking
+- Class & subject assignments
+- Record book management
+- Report card generation with QR verification
+- Signature management for reports
+- Student rankings
 
-**Use your preferred IDE**
+### 🎓 Student Portal
+- View grades, reports & rankings
+- Track attendance
+- View fee balances & payment history
+- AI-powered Study Pal chatbot
+- Announcements feed
+- Profile management
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### 👨‍👩‍👧 Parent Portal
+- Monitor linked children's grades & attendance
+- View fee records & payment status
+- Access report cards
+- Communication with teachers
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### 💬 Messaging System
+- Real-time direct messaging
+- Image sharing in chat
+- Online presence indicators
+- Read receipts
+- Typing indicators
 
-Follow these steps:
+### 📄 Report Cards
+- Auto-generated PDF reports with school branding
+- QR code verification system
+- Digital signatures
+- Public verification page (`/verify/:serialNumber`)
+
+### 💰 Fee Management
+- Multi-currency support (USD & ZIG)
+- Receipt image uploads
+- Barcode scanning
+- Payment history & charts
+- Scholarship tracking
+- CSV/PDF export
+
+---
+
+## 🛠️ Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| **Frontend** | React 18, TypeScript, Vite |
+| **Styling** | Tailwind CSS, shadcn/ui, Radix UI |
+| **State** | TanStack React Query |
+| **Routing** | React Router v6 |
+| **Backend** | Supabase (via Lovable Cloud) |
+| **Database** | PostgreSQL (managed) |
+| **Auth** | Supabase Auth + Custom OTP |
+| **Email** | Gmail SMTP via Edge Functions |
+| **PDF** | jsPDF + jspdf-autotable |
+| **Charts** | Recharts |
+| **AI** | Lovable AI (Study Pal) |
+| **QR Codes** | qrcode library |
+
+---
+
+## 📁 Project Structure
+
+```
+src/
+├── assets/            # Images (hero, gallery, staff photos)
+├── components/
+│   ├── admin/fees/    # Fee management components
+│   ├── chat/          # Messaging components
+│   └── ui/            # shadcn/ui primitives
+├── hooks/             # Custom hooks (auth, presence, toast)
+├── integrations/      # Supabase client & types
+├── lib/               # Utilities (grading, CSV, PDF export)
+├── pages/
+│   ├── admin/         # Admin dashboard pages
+│   ├── parent/        # Parent portal pages
+│   ├── student/       # Student portal pages
+│   ├── teacher/       # Teacher portal pages
+│   └── shared/        # Shared pages (messages, rankings)
+supabase/
+└── functions/         # Edge functions (email, OTP, backups, AI)
+```
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+- Node.js 18+ & npm
+
+### Local Development
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
+# Clone the repository
 git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
 cd <YOUR_PROJECT_NAME>
 
-# Step 3: Install the necessary dependencies.
-npm i
+# Install dependencies
+npm install
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Start dev server
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+The app runs at `http://localhost:8080`.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### Environment Variables
 
-**Use GitHub Codespaces**
+Create a `.env` file (auto-generated by Lovable Cloud):
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+```env
+VITE_SUPABASE_URL=<your-supabase-url>
+VITE_SUPABASE_PUBLISHABLE_KEY=<your-anon-key>
+VITE_SUPABASE_PROJECT_ID=<your-project-id>
+```
 
-## What technologies are used for this project?
+### Edge Function Secrets (Lovable Cloud)
 
-This project is built with:
+| Secret | Purpose |
+|--------|---------|
+| `GMAIL_EMAIL` | SMTP sender address |
+| `GMAIL_APP_PASSWORD` | Gmail app password for SMTP |
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+---
 
-## How can I deploy this project?
+## 🌐 Deployment
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+### Lovable (Recommended)
+Click **Publish** in the Lovable editor — frontend and backend deploy automatically.
 
-## Can I connect a custom domain to my Lovable project?
+### Vercel
+1. Push code to GitHub via Lovable Settings → GitHub
+2. Import repo on [vercel.com](https://vercel.com)
+3. Set framework preset to **Vite**
+4. Add environment variables:
+   - `VITE_SUPABASE_URL`
+   - `VITE_SUPABASE_PUBLISHABLE_KEY`
+5. Deploy ✅
 
-Yes, you can!
+> **Note:** Only the frontend deploys to Vercel. Backend (Edge Functions, database, auth, SMTP) runs on Lovable Cloud automatically.
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+---
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+## 📜 Available Scripts
+
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start development server |
+| `npm run build` | Production build |
+| `npm run preview` | Preview production build |
+| `npm run test` | Run tests |
+| `npm run test:watch` | Run tests in watch mode |
+| `npm run lint` | Lint codebase |
+
+---
+
+## 🗄️ Database Schema
+
+Key tables: `profiles`, `user_roles`, `student_profiles`, `teacher_profiles`, `classes`, `subjects`, `grades`, `monthly_tests`, `attendance`, `fee_records`, `announcements`, `messages`, `conversations`, `applications`, `academic_sessions`, `report_verifications`, `scholarships`, `petty_cash`, `staff_gallery`, `homepage_updates`, `system_settings`
+
+### Enums
+- **Roles:** `admin`, `teacher`, `student`, `parent`
+- **Academic Levels:** `zjc`, `o_level`, `a_level`
+- **Terms:** `term_1`, `term_2`, `term_3`
+- **Attendance:** `present`, `absent`, `late`, `excused`
+
+---
+
+## 🔒 Security
+
+- Row-Level Security (RLS) on all tables
+- Role-based access via `has_role()` security definer function
+- Server-side OTP verification
+- Branded email verification (no auto-confirm)
+- User banning system
+
+---
+
+## 📝 License
+
+This project is proprietary software for St. Mary's High School.
+
+---
+
+Built with ❤️ using [Lovable](https://lovable.dev)
