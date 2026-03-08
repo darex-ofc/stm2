@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { FileText, Search, CheckCircle, XCircle, Clock, Eye, Loader2 } from "lucide-react";
+import { FileText, Search, CheckCircle, XCircle, Clock, Eye, Loader2, RotateCcw } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import ExportDropdown from "@/components/ExportDropdown";
 
