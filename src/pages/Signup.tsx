@@ -270,6 +270,11 @@ const Signup = () => {
       await supabase.from("teacher_profiles").insert({ user_id: authData.user.id });
     }
 
+    // Send welcome email
+    supabase.functions.invoke("send-branded-email", {
+      body: { email, type: "welcome", welcome_data: { name: fullName, role: codeData.role } },
+    }).catch(() => {});
+
     toast({ title: "Account Created!", description: "Welcome to St. Mary's. You can now log in." });
     navigate("/login", { replace: true });
     setLoading(false);
