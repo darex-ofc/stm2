@@ -6,16 +6,16 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { UserPlus, GraduationCap, BookOpen, Shield, Send, Loader2, CheckCircle, Users } from "lucide-react";
+import { UserPlus, GraduationCap, BookOpen, Shield, Send, Loader2, CheckCircle, Users, Mail, KeyRound } from "lucide-react";
 import schoolLogo from "@/assets/school-logo.png";
 
 type SignupRole = "student" | "teacher" | "parent" | "admin";
 
-const roleConfig: Record<SignupRole, { label: string; icon: React.ElementType; description: string; color: string; bgColor: string }> = {
-  student: { label: "Student", icon: GraduationCap, description: "Join as a student to view grades & reports", color: "text-accent", bgColor: "bg-accent/10 border-accent/30" },
-  teacher: { label: "Teacher", icon: BookOpen, description: "Join as a teacher to manage classes", color: "text-secondary", bgColor: "bg-secondary/10 border-secondary/30" },
-  parent: { label: "Parent", icon: Users, description: "Join as a parent to monitor your child's progress", color: "text-amber-600", bgColor: "bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800" },
-  admin: { label: "Administrator", icon: Shield, description: "Register as an administrator with admin code", color: "text-primary", bgColor: "bg-primary/10 border-primary/30" },
+const roleConfig: Record<SignupRole, { label: string; icon: React.ElementType; description: string; color: string; bgColor: string; requiresCode: boolean }> = {
+  student: { label: "Student", icon: GraduationCap, description: "Join as a student — verify with email", color: "text-accent", bgColor: "bg-accent/10 border-accent/30", requiresCode: false },
+  teacher: { label: "Teacher", icon: BookOpen, description: "Join as a teacher — access code required", color: "text-secondary", bgColor: "bg-secondary/10 border-secondary/30", requiresCode: true },
+  parent: { label: "Parent", icon: Users, description: "Join as a parent — verify with email", color: "text-amber-600", bgColor: "bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800", requiresCode: false },
+  admin: { label: "Administrator", icon: Shield, description: "Register as admin — access code required", color: "text-primary", bgColor: "bg-primary/10 border-primary/30", requiresCode: true },
 };
 
 const Signup = () => {
@@ -37,11 +37,15 @@ const Signup = () => {
   const [guardianPhone, setGuardianPhone] = useState("");
   const [guardianEmail, setGuardianEmail] = useState("");
   const [address, setAddress] = useState("");
-  const [previousSchool, setPreviousSchool] = useState("");
   const [nationalId, setNationalId] = useState("");
-  const [requestSubmitted, setRequestSubmitted] = useState(false);
-  const [requestLoading, setRequestLoading] = useState(false);
-  const [notes, setNotes] = useState("");
+  const [gender, setGender] = useState("");
+
+  // OTP verification state
+  const [otpStep, setOtpStep] = useState<"form" | "otp" | "done">("form");
+  const [otpCode, setOtpCode] = useState("");
+  const [otpSending, setOtpSending] = useState(false);
+  const [otpVerifying, setOtpVerifying] = useState(false);
+  const [otpResendTimer, setOtpResendTimer] = useState(0);
 
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -51,12 +55,145 @@ const Signup = () => {
       .then(({ data }) => setClasses(data || []));
   }, []);
 
-  const filteredClasses = useMemo(() => 
+  // Resend timer
+  useEffect(() => {
+    if (otpResendTimer > 0) {
+      const t = setTimeout(() => setOtpResendTimer(otpResendTimer - 1), 1000);
+      return () => clearTimeout(t);
+    }
+  }, [otpResendTimer]);
+
+  const filteredClasses = useMemo(() =>
     classes.filter(c => c.level === selectedLevel && c.form === parseInt(selectedForm)),
     [classes, selectedLevel, selectedForm]
   );
 
-  const handleSignup = async (e: React.FormEvent) => {
+  const sendOtp = async () => {
+    setOtpSending(true);
+    try {
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-branded-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim(), type: 'verification_otp', full_name: fullName }),
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || 'Failed to send verification code');
+      toast({ title: "Code Sent!", description: `A verification code has been sent to ${email}` });
+      setOtpStep("otp");
+      setOtpResendTimer(60);
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setOtpSending(false);
+    }
+  };
+
+  const verifyOtpAndSignup = async () => {
+    if (!otpCode.trim() || otpCode.trim().length !== 6) {
+      toast({ title: "Invalid Code", description: "Please enter the 6-digit code.", variant: "destructive" });
+      return;
+    }
+    setOtpVerifying(true);
+
+    try {
+      // Verify OTP
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/verify-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim(), otp_code: otpCode.trim() }),
+      });
+      const result = await res.json();
+      if (!result.valid) {
+        toast({ title: "Verification Failed", description: result.error || "Invalid code.", variant: "destructive" });
+        setOtpVerifying(false);
+        return;
+      }
+
+      // OTP verified — create the account
+      await createAccount();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+      setOtpVerifying(false);
+    }
+  };
+
+  const createAccount = async () => {
+    if (!selectedRole) return;
+
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email, password,
+      options: { data: { full_name: fullName } },
+    });
+
+    if (authError || !authData.user) {
+      toast({ title: "Signup Failed", description: authError?.message || "Could not create account.", variant: "destructive" });
+      setOtpVerifying(false);
+      setLoading(false);
+      return;
+    }
+
+    // Assign role
+    await supabase.from("user_roles").insert({ user_id: authData.user.id, role: selectedRole });
+
+    if (selectedRole === "student") {
+      await supabase.from("student_profiles").insert({
+        user_id: authData.user.id,
+        level: selectedLevel as any,
+        form: parseInt(selectedForm),
+        class_id: selectedClass || null,
+        date_of_birth: dateOfBirth || null,
+        gender: gender || null,
+        guardian_name: guardianName || null,
+        guardian_phone: guardianPhone || null,
+        guardian_email: guardianEmail || null,
+        address: address || null,
+        national_id: nationalId || null,
+      });
+      if (phone) {
+        await supabase.from("profiles").update({ phone }).eq("user_id", authData.user.id);
+      }
+    } else if (selectedRole === "parent") {
+      if (phone) {
+        await supabase.from("profiles").update({ phone }).eq("user_id", authData.user.id);
+      }
+      if (childStudentId.trim()) {
+        const { data: studentProfile } = await supabase
+          .from("student_profiles")
+          .select("user_id, guardian_phone, guardian_email")
+          .eq("student_id", childStudentId.trim())
+          .single();
+        if (studentProfile) {
+          const parentPhone = phone.trim().replace(/\s+/g, "");
+          const studentGuardianPhone = (studentProfile.guardian_phone || "").trim().replace(/\s+/g, "");
+          const studentGuardianEmail = (studentProfile.guardian_email || "").trim().toLowerCase();
+          const parentEmail = email.trim().toLowerCase();
+          const phoneMatch = parentPhone && studentGuardianPhone && parentPhone.includes(studentGuardianPhone.slice(-9));
+          const emailMatch = parentEmail && studentGuardianEmail && parentEmail === studentGuardianEmail;
+          if (phoneMatch || emailMatch) {
+            await supabase.from("parent_student_links").insert({
+              parent_id: authData.user.id,
+              student_id: studentProfile.user_id,
+            });
+          } else {
+            toast({
+              title: "Child Not Linked",
+              description: "Your phone/email doesn't match guardian info. Request linking through the admin.",
+              variant: "destructive"
+            });
+          }
+        }
+      }
+    }
+
+    setOtpStep("done");
+    setOtpVerifying(false);
+    setLoading(false);
+    toast({ title: "Account Created!", description: "Welcome to St. Mary's. You can now log in." });
+    setTimeout(() => navigate("/login", { replace: true }), 2000);
+  };
+
+  // Access code signup for teacher/admin
+  const handleCodeSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedRole) return;
     setLoading(true);
@@ -108,55 +245,6 @@ const Signup = () => {
 
     if (codeData.role === "teacher") {
       await supabase.from("teacher_profiles").insert({ user_id: authData.user.id });
-    } else if (codeData.role === "student") {
-      await supabase.from("student_profiles").insert({
-        user_id: authData.user.id,
-        level: selectedLevel as any,
-        form: parseInt(selectedForm),
-        class_id: selectedClass || null,
-        date_of_birth: dateOfBirth || null,
-        gender: gender || null,
-        guardian_name: guardianName || null,
-        guardian_phone: guardianPhone || null,
-        guardian_email: guardianEmail || null,
-        address: address || null,
-        national_id: nationalId || null,
-      });
-      if (phone) {
-        await supabase.from("profiles").update({ phone }).eq("user_id", authData.user.id);
-      }
-    } else if (codeData.role === "parent" && childStudentId.trim()) {
-      const { data: studentProfile } = await supabase
-        .from("student_profiles")
-        .select("user_id, guardian_phone, guardian_email")
-        .eq("student_id", childStudentId.trim())
-        .single();
-      if (studentProfile) {
-        // Verify parent identity by matching guardian phone or email
-        const parentPhone = phone.trim().replace(/\s+/g, "");
-        const studentGuardianPhone = (studentProfile.guardian_phone || "").trim().replace(/\s+/g, "");
-        const studentGuardianEmail = (studentProfile.guardian_email || "").trim().toLowerCase();
-        const parentEmail = email.trim().toLowerCase();
-        
-        const phoneMatch = parentPhone && studentGuardianPhone && parentPhone.includes(studentGuardianPhone.slice(-9));
-        const emailMatch = parentEmail && studentGuardianEmail && parentEmail === studentGuardianEmail;
-        
-        if (phoneMatch || emailMatch) {
-          await supabase.from("parent_student_links").insert({
-            parent_id: authData.user.id,
-            student_id: studentProfile.user_id,
-          });
-        } else {
-          toast({ 
-            title: "Child Not Linked", 
-            description: "Your phone number or email doesn't match the guardian info on the student's profile. You can request linking through the school admin.", 
-            variant: "destructive" 
-          });
-        }
-      }
-      if (phone) {
-        await supabase.from("profiles").update({ phone }).eq("user_id", authData.user.id);
-      }
     }
 
     toast({ title: "Account Created!", description: "Welcome to St. Mary's. You can now log in." });
@@ -164,64 +252,19 @@ const Signup = () => {
     setLoading(false);
   };
 
-  const handleRequestAccess = async (e: React.FormEvent) => {
+  // Handle student/parent email verification submit
+  const handleEmailVerifySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!fullName || !email || !password) {
-      toast({ title: "Required Fields", description: "Please fill in your full name, email, and password.", variant: "destructive" });
+      toast({ title: "Required", description: "Please fill in all required fields.", variant: "destructive" });
       return;
     }
     if (password.length < 6) {
       toast({ title: "Weak Password", description: "Password must be at least 6 characters.", variant: "destructive" });
       return;
     }
-    setRequestLoading(true);
-
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email, password,
-      options: { data: { full_name: fullName } },
-    });
-
-    if (authError || !authData.user) {
-      toast({ title: "Signup Failed", description: authError?.message || "Could not create account.", variant: "destructive" });
-      setRequestLoading(false);
-      return;
-    }
-
-    const { error } = await supabase.from("applications").insert({
-      full_name: fullName,
-      email,
-      phone: phone || null,
-      date_of_birth: dateOfBirth || null,
-      level: selectedLevel as any,
-      form: parseInt(selectedForm),
-      guardian_name: guardianName || null,
-      guardian_phone: guardianPhone || null,
-      guardian_email: guardianEmail || null,
-      address: address || null,
-      previous_school: previousSchool || null,
-      notes: notes || null,
-      user_id: authData.user.id,
-      class_id: selectedClass || null,
-    } as any);
-
-    await supabase.auth.signOut();
-
-    try {
-      await supabase.functions.invoke("send-notification", {
-        body: { type: "request_received", email, full_name: fullName },
-      });
-    } catch (e) { console.error("Email notification failed:", e); }
-
-    setRequestLoading(false);
-    if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-    } else {
-      setRequestSubmitted(true);
-      toast({ title: "Request Submitted!", description: "Your account has been created. You'll receive an email and can log in once approved." });
-    }
+    await sendOtp();
   };
-
-  const [gender, setGender] = useState("");
 
   const studentPersonalFields = (
     <>
@@ -303,26 +346,136 @@ const Signup = () => {
           <p className="text-xs text-muted-foreground mt-1">
             {classes.length === 0
               ? "No classes have been set up yet. Please contact the school administration."
-              : `No classes found for ${selectedLevel.replace("_", " ").toUpperCase()} Form ${selectedForm}. Try selecting a different level or form, or contact the admin.`}
+              : `No classes found for ${selectedLevel.replace("_", " ").toUpperCase()} Form ${selectedForm}. Try a different level or form.`}
           </p>
         </div>
       )}
     </div>
   );
 
-  if (requestSubmitted) {
+  const parentChildLinkFields = (
+    <div className="border-t border-border pt-3 space-y-3">
+      <p className="text-sm font-semibold text-foreground">Link to Your Child (Optional)</p>
+      <p className="text-xs text-muted-foreground">Enter your child's Student ID to auto-link. Your phone or email must match the guardian info on the student's profile.</p>
+      <div>
+        <label className="text-sm font-medium text-foreground">Child's Student ID</label>
+        <Input
+          placeholder="e.g. STM20260001"
+          value={childStudentId}
+          onChange={async (e) => {
+            const val = e.target.value;
+            setChildStudentId(val);
+            setChildLookupResult(null);
+            if (val.trim().length >= 3) {
+              const { data } = await supabase
+                .from("student_profiles")
+                .select("user_id, student_id, form, level")
+                .eq("student_id", val.trim())
+                .single();
+              if (data) {
+                const { data: profile } = await supabase
+                  .from("profiles")
+                  .select("full_name")
+                  .eq("user_id", data.user_id)
+                  .single();
+                setChildLookupResult(profile?.full_name ? `✓ Found: ${profile.full_name} (Form ${data.form})` : `✓ Student found (Form ${data.form})`);
+              } else {
+                setChildLookupResult("✗ No student found with this ID");
+              }
+            }
+          }}
+        />
+        {childLookupResult && (
+          <p className={`text-xs mt-1 ${childLookupResult.startsWith("✓") ? "text-green-600 dark:text-green-400" : "text-destructive"}`}>
+            {childLookupResult}
+          </p>
+        )}
+      </div>
+      <div>
+        <label className="text-sm font-medium text-foreground">Phone Number</label>
+        <Input placeholder="+263 7X XXX XXXX" value={phone} onChange={e => setPhone(e.target.value)} />
+      </div>
+    </div>
+  );
+
+  // OTP verification screen
+  if (otpStep === "otp") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-muted/30 px-4 py-8">
+        <div className="w-full max-w-md">
+          <div className="text-center mb-8">
+            <img src={schoolLogo} alt="St. Mary's" className="h-20 w-20 object-contain mx-auto mb-4" />
+            <h1 className="font-display text-2xl font-bold text-primary">Verify Your Email</h1>
+          </div>
+          <Card className="shadow-card border-2">
+            <CardContent className="pt-6 space-y-6">
+              <div className="text-center">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mx-auto mb-4">
+                  <Mail className="h-8 w-8 text-primary" />
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  We've sent a 6-digit verification code to
+                </p>
+                <p className="font-semibold text-foreground mt-1">{email}</p>
+              </div>
+
+              <div className="space-y-3">
+                <label className="text-sm font-medium text-foreground">Verification Code</label>
+                <Input
+                  type="text"
+                  placeholder="Enter 6-digit code"
+                  value={otpCode}
+                  onChange={e => setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                  className="text-center text-2xl tracking-[0.5em] font-mono h-14"
+                  maxLength={6}
+                  autoFocus
+                />
+              </div>
+
+              <Button
+                className="w-full h-12"
+                onClick={verifyOtpAndSignup}
+                disabled={otpVerifying || otpCode.length !== 6}
+              >
+                {otpVerifying ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Verifying...</> : "Verify & Create Account"}
+              </Button>
+
+              <div className="text-center space-y-2">
+                <p className="text-xs text-muted-foreground">Didn't receive the code? Check spam/junk folder.</p>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={sendOtp}
+                  disabled={otpResendTimer > 0 || otpSending}
+                >
+                  {otpResendTimer > 0 ? `Resend in ${otpResendTimer}s` : otpSending ? "Sending..." : "Resend Code"}
+                </Button>
+              </div>
+
+              <button
+                onClick={() => { setOtpStep("form"); setOtpCode(""); }}
+                className="text-sm text-muted-foreground hover:text-foreground w-full text-center"
+              >
+                ← Back to registration
+              </button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  // Success screen
+  if (otpStep === "done") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted/30 px-4">
         <Card className="max-w-md w-full text-center py-8">
           <CardContent>
             <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-            <h2 className="font-display text-2xl font-bold text-foreground mb-2">Request Submitted!</h2>
-            <p className="text-muted-foreground mb-4">Your account has been created and your access request has been sent to the administration for review.</p>
-            <p className="text-sm text-muted-foreground mb-6">Once approved, you'll be able to log in with your email and password — no access code needed!</p>
-            <div className="space-y-3">
-              <Link to="/login" className="text-sm text-primary hover:underline block">Go to Login</Link>
-              <Link to="/" className="text-sm text-muted-foreground hover:underline block">← Back to website</Link>
-            </div>
+            <h2 className="font-display text-2xl font-bold text-foreground mb-2">Account Created!</h2>
+            <p className="text-muted-foreground mb-4">Your email has been verified and your account is ready.</p>
+            <p className="text-sm text-muted-foreground mb-6">Redirecting you to login...</p>
+            <Link to="/login" className="text-sm text-primary hover:underline">Go to Login now</Link>
           </CardContent>
         </Card>
       </div>
@@ -337,12 +490,12 @@ const Signup = () => {
             <img src={schoolLogo} alt="St. Mary's" className="h-20 w-20 object-contain mx-auto" />
           </Link>
           <h1 className="font-display text-3xl font-bold text-primary">Create Account</h1>
-          <p className="text-muted-foreground mt-2">Select your role and register with an access code</p>
+          <p className="text-muted-foreground mt-2">Select your role to get started</p>
         </div>
 
         {!selectedRole ? (
           <div className="space-y-4">
-            {(["student", "teacher", "parent", "admin"] as SignupRole[]).map((role) => {
+            {(["student", "parent", "teacher", "admin"] as SignupRole[]).map((role) => {
               const config = roleConfig[role];
               return (
                 <Card key={role} className={`cursor-pointer transition-all hover:shadow-card-hover border-2 hover:scale-[1.02] ${config.bgColor}`} onClick={() => setSelectedRole(role)}>
@@ -352,12 +505,19 @@ const Signup = () => {
                       <p className="font-display text-xl font-bold text-foreground">Sign Up as {config.label}</p>
                       <p className="text-sm text-muted-foreground mt-1">{config.description}</p>
                     </div>
-                    <UserPlus className="w-5 h-5 text-muted-foreground" />
+                    {config.requiresCode ? (
+                      <KeyRound className="w-5 h-5 text-muted-foreground" />
+                    ) : (
+                      <Mail className="w-5 h-5 text-muted-foreground" />
+                    )}
                   </CardContent>
                 </Card>
               );
             })}
-            <p className="text-center text-sm text-muted-foreground mt-4">You need an access code from the administration to register.</p>
+            <div className="flex items-center gap-4 justify-center mt-4 text-xs text-muted-foreground">
+              <div className="flex items-center gap-1"><Mail className="w-3 h-3" /> Email verification</div>
+              <div className="flex items-center gap-1"><KeyRound className="w-3 h-3" /> Access code required</div>
+            </div>
             <div className="text-center mt-4 space-y-2">
               <Link to="/login" className="text-sm text-primary hover:underline">Already have an account? Sign in</Link>
               <Link to="/" className="text-sm text-muted-foreground hover:underline block">← Back to website</Link>
@@ -365,91 +525,95 @@ const Signup = () => {
           </div>
         ) : (
           <div>
-            <button onClick={() => setSelectedRole(null)} className="text-sm text-muted-foreground hover:text-foreground mb-4 flex items-center gap-1">← Choose different role</button>
+            <button onClick={() => { setSelectedRole(null); setOtpStep("form"); setOtpCode(""); }} className="text-sm text-muted-foreground hover:text-foreground mb-4 flex items-center gap-1">← Choose different role</button>
 
-            {selectedRole === "student" ? (
+            {/* Student — email OTP verification */}
+            {selectedRole === "student" && (
               <Card className={`shadow-card border-2 ${roleConfig.student.bgColor}`}>
                 <CardHeader className="pb-4">
                   <div className="flex items-center gap-3">
                     <div className={`p-3 rounded-lg bg-card shadow-sm ${roleConfig.student.color}`}><GraduationCap className="w-6 h-6" /></div>
                     <div>
                       <CardTitle>Student Registration</CardTitle>
-                      <CardDescription>Use an access code or request approval</CardDescription>
+                      <CardDescription>Verify your email to create an account</CardDescription>
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <Tabs defaultValue="with-code">
-                    <TabsList className="w-full mb-4">
-                      <TabsTrigger value="with-code" className="flex-1">I Have a Code</TabsTrigger>
-                      <TabsTrigger value="request" className="flex-1">Request Access</TabsTrigger>
-                    </TabsList>
-
-                    <TabsContent value="with-code">
-                      <form onSubmit={handleSignup} className="space-y-4">
-                        <div>
-                          <label className="text-sm font-medium text-foreground">Access Code</label>
-                          <Input placeholder="Enter your access code" value={accessCode} onChange={e => setAccessCode(e.target.value)} required />
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium text-foreground">Full Name</label>
-                          <Input placeholder="John Doe" value={fullName} onChange={e => setFullName(e.target.value)} required />
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium text-foreground">Email</label>
-                          <Input type="email" placeholder="your.email@example.com" value={email} onChange={e => setEmail(e.target.value)} required />
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium text-foreground">Password</label>
-                          <Input type="password" placeholder="Minimum 6 characters" value={password} onChange={e => setPassword(e.target.value)} required minLength={6} />
-                        </div>
-                        {studentPersonalFields}
-                        {classSelectField}
-                        <Button type="submit" className="w-full" disabled={loading}>
-                          {loading ? "Creating account..." : "Create Student Account"}
-                        </Button>
-                      </form>
-                    </TabsContent>
-
-                    <TabsContent value="request">
-                      <form onSubmit={handleRequestAccess} className="space-y-4">
-                        <p className="text-sm text-muted-foreground bg-muted p-3 rounded-lg">
-                          Don't have an access code? Submit your details for admin approval. Once approved, you can log in immediately — no code needed.
-                        </p>
-                        <div>
-                          <label className="text-sm font-medium text-foreground">Full Name *</label>
-                          <Input placeholder="John Doe" value={fullName} onChange={e => setFullName(e.target.value)} required />
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium text-foreground">Email *</label>
-                          <Input type="email" placeholder="your.email@example.com" value={email} onChange={e => setEmail(e.target.value)} required />
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium text-foreground">Password *</label>
-                          <Input type="password" placeholder="Minimum 6 characters" value={password} onChange={e => setPassword(e.target.value)} required minLength={6} />
-                        </div>
-                        {studentPersonalFields}
-                        {classSelectField}
-                        <div>
-                          <label className="text-sm font-medium text-foreground">Previous School</label>
-                          <Input placeholder="Name of previous school" value={previousSchool} onChange={e => setPreviousSchool(e.target.value)} />
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium text-foreground">Additional Notes</label>
-                          <textarea placeholder="Any additional information..." value={notes} onChange={e => setNotes(e.target.value)} rows={3} className="w-full border border-input rounded-lg px-3 py-2 bg-background text-sm resize-none" />
-                        </div>
-                        <Button type="submit" className="w-full" disabled={requestLoading}>
-                          {requestLoading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Creating account...</> : <><Send className="w-4 h-4 mr-2" /> Submit & Create Account</>}
-                        </Button>
-                      </form>
-                    </TabsContent>
-                  </Tabs>
+                  <form onSubmit={handleEmailVerifySubmit} className="space-y-4">
+                    <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 text-sm text-muted-foreground flex items-start gap-2">
+                      <Mail className="w-4 h-4 mt-0.5 text-primary flex-shrink-0" />
+                      <span>A verification code will be sent to your email to confirm your identity.</span>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-foreground">Full Name *</label>
+                      <Input placeholder="John Doe" value={fullName} onChange={e => setFullName(e.target.value)} required />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-foreground">Email *</label>
+                      <Input type="email" placeholder="your.email@example.com" value={email} onChange={e => setEmail(e.target.value)} required />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-foreground">Password *</label>
+                      <Input type="password" placeholder="Minimum 6 characters" value={password} onChange={e => setPassword(e.target.value)} required minLength={6} />
+                    </div>
+                    {studentPersonalFields}
+                    {classSelectField}
+                    <Button type="submit" className="w-full" disabled={otpSending}>
+                      {otpSending ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Sending Code...</> : <><Mail className="w-4 h-4 mr-2" /> Verify Email & Register</>}
+                    </Button>
+                  </form>
                   <div className="mt-4 text-center">
                     <Link to="/login" className="text-sm text-primary hover:underline">Already have an account? Sign in</Link>
                   </div>
                 </CardContent>
               </Card>
-            ) : (
+            )}
+
+            {/* Parent — email OTP verification */}
+            {selectedRole === "parent" && (
+              <Card className={`shadow-card border-2 ${roleConfig.parent.bgColor}`}>
+                <CardHeader className="pb-4">
+                  <div className="flex items-center gap-3">
+                    <div className={`p-3 rounded-lg bg-card shadow-sm ${roleConfig.parent.color}`}><Users className="w-6 h-6" /></div>
+                    <div>
+                      <CardTitle>Parent Registration</CardTitle>
+                      <CardDescription>Verify your email to create an account</CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleEmailVerifySubmit} className="space-y-4">
+                    <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 text-sm text-muted-foreground flex items-start gap-2">
+                      <Mail className="w-4 h-4 mt-0.5 text-primary flex-shrink-0" />
+                      <span>A verification code will be sent to your email to confirm your identity. No access code needed!</span>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-foreground">Full Name *</label>
+                      <Input placeholder="John Doe" value={fullName} onChange={e => setFullName(e.target.value)} required />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-foreground">Email *</label>
+                      <Input type="email" placeholder="your.email@example.com" value={email} onChange={e => setEmail(e.target.value)} required />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-foreground">Password *</label>
+                      <Input type="password" placeholder="Minimum 6 characters" value={password} onChange={e => setPassword(e.target.value)} required minLength={6} />
+                    </div>
+                    {parentChildLinkFields}
+                    <Button type="submit" className="w-full" disabled={otpSending}>
+                      {otpSending ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Sending Code...</> : <><Mail className="w-4 h-4 mr-2" /> Verify Email & Register</>}
+                    </Button>
+                  </form>
+                  <div className="mt-4 text-center">
+                    <Link to="/login" className="text-sm text-primary hover:underline">Already have an account? Sign in</Link>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Teacher & Admin — access code required */}
+            {(selectedRole === "teacher" || selectedRole === "admin") && (
               <Card className={`shadow-card border-2 ${roleConfig[selectedRole].bgColor}`}>
                 <CardHeader className="pb-4">
                   <div className="flex items-center gap-3">
@@ -463,67 +627,27 @@ const Signup = () => {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <form onSubmit={handleSignup} className="space-y-4">
+                  <form onSubmit={handleCodeSignup} className="space-y-4">
+                    <div className="p-3 rounded-lg bg-muted text-sm text-muted-foreground flex items-start gap-2">
+                      <KeyRound className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                      <span>An access code from the school administration is required to register as a {selectedRole}.</span>
+                    </div>
                     <div>
-                      <label className="text-sm font-medium text-foreground">Access Code</label>
+                      <label className="text-sm font-medium text-foreground">Access Code *</label>
                       <Input placeholder="Enter your access code" value={accessCode} onChange={e => setAccessCode(e.target.value)} required autoFocus />
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-foreground">Full Name</label>
+                      <label className="text-sm font-medium text-foreground">Full Name *</label>
                       <Input placeholder="John Doe" value={fullName} onChange={e => setFullName(e.target.value)} required />
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-foreground">Email</label>
+                      <label className="text-sm font-medium text-foreground">Email *</label>
                       <Input type="email" placeholder="your.email@example.com" value={email} onChange={e => setEmail(e.target.value)} required />
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-foreground">Password</label>
+                      <label className="text-sm font-medium text-foreground">Password *</label>
                       <Input type="password" placeholder="Minimum 6 characters" value={password} onChange={e => setPassword(e.target.value)} required minLength={6} />
                     </div>
-                    {selectedRole === "parent" && (
-                      <div className="border-t border-border pt-3 space-y-3">
-                        <p className="text-sm font-semibold text-foreground">Link to Your Child</p>
-                         <p className="text-xs text-muted-foreground">Enter your child's Student ID (e.g. STM20260001) to automatically link your account. Your phone or email must match the guardian info on the student's profile. You can also request linking through the school admin.</p>
-                        <div>
-                          <label className="text-sm font-medium text-foreground">Child's Student ID</label>
-                          <Input 
-                            placeholder="e.g. STM20260001" 
-                            value={childStudentId} 
-                            onChange={async (e) => {
-                              const val = e.target.value;
-                              setChildStudentId(val);
-                              setChildLookupResult(null);
-                              if (val.trim().length >= 3) {
-                                const { data } = await supabase
-                                  .from("student_profiles")
-                                  .select("user_id, student_id, form, level")
-                                  .eq("student_id", val.trim())
-                                  .single();
-                                if (data) {
-                                  const { data: profile } = await supabase
-                                    .from("profiles")
-                                    .select("full_name")
-                                    .eq("user_id", data.user_id)
-                                    .single();
-                                  setChildLookupResult(profile?.full_name ? `✓ Found: ${profile.full_name} (Form ${data.form})` : `✓ Student found (Form ${data.form})`);
-                                } else {
-                                  setChildLookupResult("✗ No student found with this ID");
-                                }
-                              }
-                            }} 
-                          />
-                          {childLookupResult && (
-                            <p className={`text-xs mt-1 ${childLookupResult.startsWith("✓") ? "text-green-600 dark:text-green-400" : "text-destructive"}`}>
-                              {childLookupResult}
-                            </p>
-                          )}
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium text-foreground">Phone Number</label>
-                          <Input placeholder="+263 7X XXX XXXX" value={phone} onChange={e => setPhone(e.target.value)} />
-                        </div>
-                      </div>
-                    )}
                     <Button type="submit" className="w-full" disabled={loading}>
                       {loading ? "Creating account..." : `Create ${roleConfig[selectedRole].label} Account`}
                     </Button>
