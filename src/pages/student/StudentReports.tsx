@@ -10,7 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableHeader, TableHead, TableBody, TableRow, TableCell } from "@/components/ui/table";
-import { AlertTriangle, FileText, Lock, DollarSign, BookOpen, ClipboardCheck, TrendingUp, Download, Printer } from "lucide-react";
+import { AlertTriangle, FileText, Lock, DollarSign, BookOpen, ClipboardCheck, TrendingUp, Download, Printer, Share2 } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Link } from "react-router-dom";
 import { Progress } from "@/components/ui/progress";
 import { getGrade, getGradeColor, type GradingScale } from "@/lib/grading";
@@ -112,7 +113,7 @@ const StudentReports = () => {
   }, [user, term, year]);
 
   const canViewReports = !reportsLocked && !hasFeeBalance;
-  const avgMark = grades.length > 0 ? Math.round(grades.reduce((s, g) => s + Number(g.mark), 0) / grades.length) : 0;
+  const avgMark = grades.length > 0 ? parseFloat((grades.reduce((s, g) => s + Number(g.mark), 0) / grades.length).toFixed(1)) : 0;
   const presentCount = attendance.filter(a => a.status === "present").length;
   const attendanceRate = attendance.length > 0 ? Math.round((presentCount / attendance.length) * 100) : 0;
 
@@ -465,6 +466,30 @@ const StudentReports = () => {
     }
   };
 
+  const shareReport = async (platform: string) => {
+    setIsGenerating(true);
+    try {
+      const result = await generateReportPDF();
+      if (!result) return;
+      const blob = result.doc.output("blob");
+      const file = new File([blob], `Report_${profileName.replace(/\s+/g, "_")}.pdf`, { type: "application/pdf" });
+      const shareText = `📄 ${profileName}'s Report Card - ${term.replace("_", " ").toUpperCase()} ${year}\n📊 Average: ${avgMark}%\n🏫 ${schoolInfo.name}`;
+
+      if (platform === "native" && navigator.share) {
+        await navigator.share({ title: `${profileName}'s Report Card`, text: shareText, files: [file] });
+      } else if (platform === "whatsapp") {
+        window.open(`https://wa.me/?text=${encodeURIComponent(shareText)}`, "_blank");
+        result.doc.save(`Report_${profileName.replace(/\s+/g, "_")}.pdf`);
+      } else if (platform === "email") {
+        const subject = encodeURIComponent(`${profileName}'s Report Card - ${term.replace("_", " ").toUpperCase()} ${year}`);
+        window.open(`mailto:?subject=${subject}&body=${encodeURIComponent(shareText)}`, "_self");
+        result.doc.save(`Report_${profileName.replace(/\s+/g, "_")}.pdf`);
+      } else if (platform === "copy") {
+        await navigator.clipboard.writeText(shareText);
+      }
+    } finally { setIsGenerating(false); }
+  };
+
   return (
     <DashboardLayout role="student">
       <div className="space-y-6">
@@ -564,6 +589,19 @@ const StudentReports = () => {
                         <Button onClick={printReportCard} variant="outline" size="sm" disabled={isGenerating}>
                           <Printer className="w-4 h-4 mr-2" /> Print
                         </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="sm" disabled={isGenerating}>
+                              <Share2 className="w-4 h-4 mr-2" /> Share
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent>
+                            <DropdownMenuItem onClick={() => shareReport("whatsapp")}>📱 WhatsApp</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => shareReport("email")}>📧 Email</DropdownMenuItem>
+                            {navigator.share && <DropdownMenuItem onClick={() => shareReport("native")}>📤 More Options</DropdownMenuItem>}
+                            <DropdownMenuItem onClick={() => shareReport("copy")}>📋 Copy Summary</DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     )}
                   </CardHeader>
