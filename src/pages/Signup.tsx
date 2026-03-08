@@ -323,7 +323,7 @@ const Signup = () => {
           </div>
           <div>
             <label className="text-sm font-medium text-foreground">Guardian Phone</label>
-            <Input placeholder="+263 7X XXX XXXX" value={guardianPhone} onChange={e => setGuardianPhone(e.target.value)} />
+            <PhoneInput value={guardianPhone} onChange={setGuardianPhone} />
           </div>
         </div>
         <div className="mt-3">
