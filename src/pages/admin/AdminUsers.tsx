@@ -169,8 +169,9 @@ const AdminUsers = () => {
     else { setSortField(field); setSortDir("asc"); }
   };
 
-  const filterByRole = (role: string) => users.filter(u => u.role === role && ((u.full_name || "").toLowerCase().includes(search.toLowerCase()) || (u.email || "").toLowerCase().includes(search.toLowerCase())));
-  const allFiltered = users.filter(u => (u.full_name || "").toLowerCase().includes(search.toLowerCase()) || (u.email || "").toLowerCase().includes(search.toLowerCase()));
+  const filterByRole = (role: string) => users.filter(u => u.role === role && u.studentProfile?.graduation_status !== "graduated" && ((u.full_name || "").toLowerCase().includes(search.toLowerCase()) || (u.email || "").toLowerCase().includes(search.toLowerCase())));
+  const allFiltered = users.filter(u => u.studentProfile?.graduation_status !== "graduated" && ((u.full_name || "").toLowerCase().includes(search.toLowerCase()) || (u.email || "").toLowerCase().includes(search.toLowerCase())));
+  const graduatedUsers = users.filter(u => u.studentProfile?.graduation_status === "graduated" && ((u.full_name || "").toLowerCase().includes(search.toLowerCase()) || (u.email || "").toLowerCase().includes(search.toLowerCase())));
 
   const studentUsers = users.filter(u => u.role === "student");
 
