@@ -72,6 +72,10 @@ import ParentGrades from "./pages/parent/ParentGrades";
 import ParentAttendance from "./pages/parent/ParentAttendance";
 import ParentFees from "./pages/parent/ParentFees";
 import ParentMessages from "./pages/parent/ParentMessages";
+import ParentReports from "./pages/parent/ParentReports";
+
+// Public pages
+import VerifyReport from "./pages/VerifyReport";
 
 const queryClient = new QueryClient();
 
