@@ -156,6 +156,7 @@ const DashboardLayout = ({ children, role }: DashboardLayoutProps) => {
           </button>
           <GlobalSearch role={role} />
           <div className="flex items-center gap-3">
+            <NotificationBell />
             <ThemeToggle />
             <div className="text-right hidden sm:block">
               <p className="text-sm font-medium text-foreground">{profile?.full_name || "User"}</p>

@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { UserPlus, GraduationCap, BookOpen, Shield, Send, Loader2, CheckCircle, Users, Mail, KeyRound } from "lucide-react";
 import schoolLogo from "@/assets/school-logo.png";
+import PhoneInput from "@/components/PhoneInput";
 
 type SignupRole = "student" | "teacher" | "parent" | "admin";
 
