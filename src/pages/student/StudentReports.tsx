@@ -568,10 +568,14 @@ const StudentReports = () => {
                     <CardTitle className="flex items-center gap-2"><FileText className="w-5 h-5" /> {term.replace("_", " ").toUpperCase()} {year} Report Card</CardTitle>
                     {grades.length > 0 && (
                       <div className="flex gap-2">
-                        <Button onClick={downloadReportCard} variant="default" size="sm">
-                          <Download className="w-4 h-4 mr-2" /> Download PDF
+                        <Button onClick={downloadReportCard} variant="default" size="sm" disabled={isGenerating}>
+                          {isGenerating ? (
+                            <><span className="w-4 h-4 mr-2 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin inline-block" /> Generating...</>
+                          ) : (
+                            <><Download className="w-4 h-4 mr-2" /> Download PDF</>
+                          )}
                         </Button>
-                        <Button onClick={printReportCard} variant="outline" size="sm">
+                        <Button onClick={printReportCard} variant="outline" size="sm" disabled={isGenerating}>
                           <Printer className="w-4 h-4 mr-2" /> Print
                         </Button>
                       </div>
