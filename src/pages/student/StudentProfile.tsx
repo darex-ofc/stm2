@@ -43,6 +43,7 @@ const StudentProfile = () => {
             emergency_contact: data.emergency_contact || "",
             emergency_phone: data.emergency_phone || "",
             date_of_birth: data.date_of_birth || "",
+            gender: data.gender || "",
           });
           setMedicalForm({
             blood_type: data.blood_type || "",
