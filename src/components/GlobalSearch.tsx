@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Search, Home, Users, FileText, GraduationCap, BookOpen, Key,
-  BarChart3, Bell, DollarSign, Receipt, Settings, ClipboardCheck
+  BarChart3, Bell, DollarSign, Receipt, Settings, ClipboardCheck,
+  MessageSquare, Trophy, Newspaper, Image, History
 } from "lucide-react";
 
 interface SearchItem {
