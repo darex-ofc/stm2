@@ -324,7 +324,7 @@ function receiptContent(data: {
     '<td style="padding:8px 0;text-align:right;',
     `font-weight:600;">${data.paymentMethod}</td></tr>`,
     '<tr><td style="padding:8px 0;color:#888;">',
-    'Date</td>',
+    'Date &amp; Time</td>',
     '<td style="padding:8px 0;text-align:right;',
     `font-weight:600;">${data.paymentDate}</td></tr>`,
     '</table>',
