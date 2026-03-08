@@ -328,6 +328,8 @@ const AdminSettings = () => {
           </CardContent>
         </Card>
 
+        <BiometricEnrollment />
+
         {/* Theme */}
         <Card>
           <CardContent className="p-6 flex items-center justify-between">
