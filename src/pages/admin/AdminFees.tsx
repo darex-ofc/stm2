@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Search, RotateCcw, BarChart3, UserSearch, BookOpen, ClipboardCheck, DollarSign, Heart, Shield, X, ScanLine, GraduationCap, Plus, Trash2, Calendar } from "lucide-react";
+import { Search, RotateCcw, BarChart3, UserSearch, BookOpen, ClipboardCheck, DollarSign, Heart, Shield, X, ScanLine, GraduationCap, Plus, Trash2, Calendar, Mail, Loader2 } from "lucide-react";
 import ExportDropdown from "@/components/ExportDropdown";
 import BarcodeScanner from "@/components/admin/fees/BarcodeScanner";
 
@@ -37,6 +37,7 @@ const AdminFees = () => {
   const [feeStructure, setFeeStructure] = useState(DEFAULT_FEE_STRUCTURE);
   const [showCharts, setShowCharts] = useState(false);
   const [scannerOpen, setScannerOpen] = useState(false);
+  const [sendingReminders, setSendingReminders] = useState(false);
 
   // Scholarships
   const [scholarships, setScholarships] = useState<any[]>([]);
@@ -211,6 +212,56 @@ const AdminFees = () => {
 
   const activeScholarships = scholarships.filter(s => s.is_active);
 
+  const sendFeeReminders = async () => {
+    setSendingReminders(true);
+    // Find students with outstanding balances
+    const owing = filtered.filter(f => Number(f.amount_due) - Number(f.amount_paid) > 0);
+    if (owing.length === 0) {
+      toast({ title: "No outstanding balances", description: "All filtered students are paid up." });
+      setSendingReminders(false);
+      return;
+    }
+
+    let sent = 0;
+    let failed = 0;
+    for (const record of owing) {
+      const studentEmail = getStudentEmail(record.student_id);
+      const sp = studentProfiles.find((p: any) => p.user_id === record.student_id);
+      const guardianEmail = sp?.guardian_email;
+
+      const reminderData = {
+        studentName: getStudentName(record.student_id),
+        className: getStudentClassName(record.student_id),
+        academicYear: record.academic_year,
+        term: record.term,
+        amountDue: Number(record.amount_due),
+        amountPaid: Number(record.amount_paid),
+      };
+
+      try {
+        if (studentEmail) {
+          await supabase.functions.invoke("send-branded-email", {
+            body: { email: studentEmail, type: "fee_reminder", reminder_data: reminderData },
+          });
+          sent++;
+        }
+        if (guardianEmail && guardianEmail !== studentEmail) {
+          await supabase.functions.invoke("send-branded-email", {
+            body: { email: guardianEmail, type: "fee_reminder", reminder_data: reminderData },
+          });
+          sent++;
+        }
+      } catch {
+        failed++;
+      }
+    }
+    toast({
+      title: "Fee Reminders Sent",
+      description: `${sent} email(s) sent to ${owing.length} student(s) with outstanding balances.${failed > 0 ? ` ${failed} failed.` : ''}`,
+    });
+    setSendingReminders(false);
+  };
+
   const scholarshipExportRows = scholarships.map(s => {
     const sp = studentProfiles.find((p: any) => p.user_id === s.student_id);
     const isExpired = s.end_date && new Date(s.end_date) < new Date();
@@ -239,6 +290,10 @@ const AdminFees = () => {
             </Button>
             <Button variant="outline" size="sm" onClick={() => setShowCharts(!showCharts)}>
               <BarChart3 className="w-4 h-4 mr-1" /> {showCharts ? "Hide Charts" : "Charts"}
+            </Button>
+            <Button variant="outline" size="sm" onClick={sendFeeReminders} disabled={sendingReminders}>
+              {sendingReminders ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Mail className="w-4 h-4 mr-1" />}
+              {sendingReminders ? "Sending..." : "Send Reminders"}
             </Button>
             <ExportDropdown
               title="Fee Records Report"

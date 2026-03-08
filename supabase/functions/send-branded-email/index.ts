@@ -447,6 +447,259 @@ function parentLinkContent(data: any): string {
   ].join('\n');
 }
 
+function welcomeContent(data: { name: string; role: string; portalUrl: string }): string {
+  const roleLabel = data.role.charAt(0).toUpperCase() + data.role.slice(1);
+  const roleFeatures: Record<string, string[]> = {
+    student: ['View your grades and report cards', 'Track attendance records', 'Check fee balances and receipts', 'Chat with teachers and classmates'],
+    teacher: ['Enter and manage student grades', 'Mark daily attendance', 'View class rankings and analytics', 'Communicate with students and parents'],
+    parent: ['Monitor your child\'s academic progress', 'View attendance and fee records', 'Receive important school notifications', 'Message teachers directly'],
+    admin: ['Manage all school operations', 'Generate reports and analytics', 'Oversee staff and students', 'Configure system settings'],
+  };
+  const features = roleFeatures[data.role] || roleFeatures.student;
+  return [
+    '<h2 style="color:#2c3e50;font-size:22px;',
+    'font-weight:600;margin:0 0 16px;',
+    'text-align:center;">Welcome to the Family! &#127891;</h2>',
+    '<p style="color:#555;font-size:15px;',
+    'line-height:1.7;margin:0 0 24px;',
+    'text-align:center;">',
+    `Hello <strong>${data.name}</strong>,<br/>`,
+    `Your <strong>${roleLabel}</strong> account has been`,
+    ' created successfully.</p>',
+    '<div style="background:#e8f5e9;',
+    'border:1px solid #c8e6c9;',
+    'border-radius:12px;padding:20px;',
+    'margin:0 0 24px;">',
+    '<p style="color:#2e7d32;font-size:14px;',
+    'font-weight:600;margin:0 0 12px;">',
+    '&#9989; What you can do:</p>',
+    '<ul style="color:#555;font-size:13px;',
+    'line-height:1.8;margin:0;padding-left:20px;">',
+    ...features.map(f => `<li>${f}</li>`),
+    '</ul></div>',
+    '<table width="100%" cellpadding="0" cellspacing="0">',
+    '<tr><td align="center" style="padding:8px 0 24px;">',
+    `<a href="${data.portalUrl}"`,
+    ' style="display:inline-block;',
+    'background:#0a3d62;color:#fff;',
+    'text-decoration:none;padding:16px 48px;',
+    'border-radius:12px;font-size:16px;',
+    'font-weight:600;">',
+    '&#128218; Log In Now</a>',
+    '</td></tr></table>',
+    '<div style="text-align:center;">',
+    '<p style="color:#888;font-size:12px;margin:0;">',
+    'If you need help, contact your school admin.</p>',
+    '</div>',
+  ].join('\n');
+}
+
+function attendanceAlertContent(data: {
+  studentName: string;
+  date: string;
+  status: string;
+  className: string;
+  markedBy?: string;
+}): string {
+  const statusColor = data.status === 'absent' ? '#dc2626' : '#f59e0b';
+  const statusIcon = data.status === 'absent' ? '&#10060;' : '&#9201;';
+  const statusLabel = data.status.charAt(0).toUpperCase() + data.status.slice(1);
+  return [
+    '<h2 style="color:#2c3e50;font-size:22px;',
+    'font-weight:600;margin:0 0 16px;',
+    `text-align:center;">Attendance Alert ${statusIcon}</h2>`,
+    '<p style="color:#555;font-size:15px;',
+    'line-height:1.7;margin:0 0 24px;',
+    'text-align:center;">',
+    `<strong>${data.studentName}</strong> was marked`,
+    ` as <strong style="color:${statusColor};">`,
+    `${statusLabel}</strong> today.</p>`,
+    '<div style="background:#f8f9fa;',
+    'border:1px solid #e9ecef;',
+    'border-radius:12px;padding:24px;',
+    'margin:0 0 24px;">',
+    '<table width="100%" cellpadding="0" cellspacing="0">',
+    '<tr><td style="padding:8px 0;color:#888;',
+    'font-size:14px;">Student</td>',
+    '<td style="padding:8px 0;text-align:right;',
+    `font-weight:600;">${data.studentName}</td></tr>`,
+    '<tr><td style="padding:8px 0;color:#888;',
+    'font-size:14px;">Class</td>',
+    '<td style="padding:8px 0;text-align:right;',
+    `font-weight:600;">${data.className}</td></tr>`,
+    '<tr><td style="padding:8px 0;color:#888;',
+    'font-size:14px;">Date</td>',
+    '<td style="padding:8px 0;text-align:right;',
+    `font-weight:600;">${data.date}</td></tr>`,
+    '<tr><td style="padding:8px 0;color:#888;',
+    'font-size:14px;">Status</td>',
+    `<td style="padding:8px 0;text-align:right;`,
+    `font-weight:700;color:${statusColor};">`,
+    `${statusLabel}</td></tr>`,
+    '</table></div>',
+    data.status === 'absent' ? [
+      '<div style="background:#fff8e1;',
+      'border:1px solid #ffe082;',
+      'border-radius:12px;padding:16px;',
+      'margin:0 0 24px;">',
+      '<p style="color:#f57f17;font-size:13px;',
+      'line-height:1.6;margin:0;">',
+      '<strong>&#9888; Note:</strong> If this absence',
+      ' was excused, please contact the school',
+      ' to update the records.</p></div>',
+    ].join('\n') : '',
+    '<div style="text-align:center;">',
+    '<p style="color:#888;font-size:12px;margin:0;">',
+    'This is an automated attendance notification.</p>',
+    '</div>',
+  ].join('\n');
+}
+
+function gradeNotificationContent(data: {
+  studentName: string;
+  subjectName: string;
+  mark: number;
+  grade: string;
+  term: string;
+  className: string;
+  comment?: string;
+}): string {
+  const termLabel = data.term.replace('_', ' ').toUpperCase();
+  const gradeColor = data.mark >= 70 ? '#16a34a' : data.mark >= 50 ? '#f59e0b' : '#dc2626';
+  return [
+    '<h2 style="color:#2c3e50;font-size:22px;',
+    'font-weight:600;margin:0 0 16px;',
+    'text-align:center;">New Grade Posted &#128202;</h2>',
+    '<p style="color:#555;font-size:15px;',
+    'line-height:1.7;margin:0 0 24px;',
+    'text-align:center;">',
+    `A grade has been entered for`,
+    ` <strong>${data.studentName}</strong>.</p>`,
+    '<div style="background:#0a3d62;',
+    'border-radius:16px;padding:32px;',
+    'text-align:center;margin:0 auto 24px;">',
+    '<p style="color:#b8d4e8;font-size:13px;',
+    'margin:0 0 8px;letter-spacing:1px;',
+    'text-transform:uppercase;">',
+    `${data.subjectName}</p>`,
+    `<p style="color:#fff;font-size:48px;`,
+    'font-weight:800;margin:0 0 4px;">',
+    `${data.mark}%</p>`,
+    `<p style="color:${gradeColor};`,
+    'font-size:20px;font-weight:700;',
+    `margin:0;">Grade: ${data.grade}</p>`,
+    '</div>',
+    '<div style="background:#f8f9fa;',
+    'border:1px solid #e9ecef;',
+    'border-radius:12px;padding:20px;',
+    'margin:0 0 24px;">',
+    '<table width="100%" cellpadding="0" cellspacing="0">',
+    '<tr><td style="padding:6px 0;color:#888;',
+    'font-size:14px;">Student</td>',
+    '<td style="padding:6px 0;text-align:right;',
+    `font-weight:600;">${data.studentName}</td></tr>`,
+    '<tr><td style="padding:6px 0;color:#888;',
+    'font-size:14px;">Class</td>',
+    '<td style="padding:6px 0;text-align:right;',
+    `font-weight:600;">${data.className}</td></tr>`,
+    '<tr><td style="padding:6px 0;color:#888;',
+    'font-size:14px;">Term</td>',
+    '<td style="padding:6px 0;text-align:right;',
+    `font-weight:600;">${termLabel}</td></tr>`,
+    '</table>',
+    data.comment ? [
+      '<hr style="border:none;border-top:1px solid #eee;margin:12px 0;" />',
+      '<p style="color:#666;font-size:13px;',
+      `font-style:italic;margin:0;">`,
+      `&#128172; "${data.comment}"</p>`,
+    ].join('\n') : '',
+    '</div>',
+    '<div style="text-align:center;">',
+    '<p style="color:#888;font-size:12px;margin:0;">',
+    'Log in to your portal to view all grades.</p>',
+    '</div>',
+  ].join('\n');
+}
+
+function feeReminderContent(data: {
+  studentName: string;
+  className?: string;
+  academicYear: number;
+  term: string;
+  amountDue: number;
+  amountPaid: number;
+  portalUrl: string;
+}): string {
+  const balance = data.amountDue - data.amountPaid;
+  const termLabel = data.term.replace('_', ' ').toUpperCase();
+  return [
+    '<h2 style="color:#2c3e50;font-size:22px;',
+    'font-weight:600;margin:0 0 16px;',
+    'text-align:center;">Fee Balance Reminder &#128176;</h2>',
+    '<p style="color:#555;font-size:15px;',
+    'line-height:1.7;margin:0 0 24px;',
+    'text-align:center;">',
+    'This is a friendly reminder about an',
+    ' outstanding fee balance for',
+    ` <strong>${data.studentName}</strong>.</p>`,
+    '<div style="background:#fff5f5;',
+    'border:2px solid #fed7d7;',
+    'border-radius:16px;padding:32px;',
+    'text-align:center;margin:0 auto 24px;">',
+    '<p style="color:#c53030;font-size:13px;',
+    'margin:0 0 8px;letter-spacing:1px;',
+    'text-transform:uppercase;">',
+    'Outstanding Balance</p>',
+    '<p style="color:#c53030;font-size:42px;',
+    `font-weight:800;margin:0;">$${balance.toFixed(2)}</p>`,
+    '</div>',
+    '<div style="background:#f8f9fa;',
+    'border:1px solid #e9ecef;',
+    'border-radius:12px;padding:20px;',
+    'margin:0 0 24px;">',
+    '<table width="100%" cellpadding="0" cellspacing="0"',
+    ' style="font-size:14px;">',
+    '<tr><td style="padding:6px 0;color:#888;">',
+    'Student</td>',
+    '<td style="padding:6px 0;text-align:right;',
+    `font-weight:600;">${data.studentName}</td></tr>`,
+    data.className ? [
+      '<tr><td style="padding:6px 0;color:#888;">',
+      'Class</td>',
+      '<td style="padding:6px 0;text-align:right;',
+      `font-weight:600;">${data.className}</td></tr>`,
+    ].join('\n') : '',
+    '<tr><td style="padding:6px 0;color:#888;">',
+    'Year / Term</td>',
+    '<td style="padding:6px 0;text-align:right;',
+    `font-weight:600;">${data.academicYear} &mdash; ${termLabel}</td></tr>`,
+    '<tr><td style="padding:6px 0;color:#888;">',
+    'Total Fees</td>',
+    '<td style="padding:6px 0;text-align:right;',
+    `font-weight:600;">$${data.amountDue.toFixed(2)}</td></tr>`,
+    '<tr><td style="padding:6px 0;color:#888;">',
+    'Amount Paid</td>',
+    '<td style="padding:6px 0;text-align:right;',
+    'color:#16a34a;font-weight:600;">',
+    `$${data.amountPaid.toFixed(2)}</td></tr>`,
+    '</table></div>',
+    '<table width="100%" cellpadding="0" cellspacing="0">',
+    '<tr><td align="center" style="padding:8px 0 24px;">',
+    `<a href="${data.portalUrl}"`,
+    ' style="display:inline-block;',
+    'background:#0a3d62;color:#fff;',
+    'text-decoration:none;padding:16px 48px;',
+    'border-radius:12px;font-size:16px;',
+    'font-weight:600;">',
+    '&#128179; View Fee Details</a>',
+    '</td></tr></table>',
+    '<div style="text-align:center;">',
+    '<p style="color:#888;font-size:12px;margin:0;">',
+    'Contact school admin for payment queries.</p>',
+    '</div>',
+  ].join('\n');
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -563,6 +816,52 @@ serve(async (req) => {
       }
       subject = `Parent-Student Account Linked - ${SCHOOL}`;
       html = wrap(parentLinkContent(link_data));
+
+    } else if (type === 'welcome') {
+      const { welcome_data } = body;
+      if (!welcome_data) {
+        return new Response(
+          JSON.stringify({ error: 'Welcome data is required' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        );
+      }
+      const portalUrl = supabaseUrl.replace('.supabase.co', '.lovable.app') + '/login';
+      subject = `Welcome to ${SCHOOL}! 🎓`;
+      html = wrap(welcomeContent({ ...welcome_data, portalUrl }));
+
+    } else if (type === 'attendance_alert') {
+      const { attendance_data } = body;
+      if (!attendance_data) {
+        return new Response(
+          JSON.stringify({ error: 'Attendance data is required' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        );
+      }
+      subject = `Attendance Alert: ${attendance_data.studentName} - ${SCHOOL}`;
+      html = wrap(attendanceAlertContent(attendance_data));
+
+    } else if (type === 'grade_notification') {
+      const { grade_data } = body;
+      if (!grade_data) {
+        return new Response(
+          JSON.stringify({ error: 'Grade data is required' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        );
+      }
+      subject = `New Grade: ${grade_data.subjectName} - ${SCHOOL}`;
+      html = wrap(gradeNotificationContent(grade_data));
+
+    } else if (type === 'fee_reminder') {
+      const { reminder_data } = body;
+      if (!reminder_data) {
+        return new Response(
+          JSON.stringify({ error: 'Reminder data is required' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        );
+      }
+      const portalUrl = supabaseUrl.replace('.supabase.co', '.lovable.app') + '/login';
+      subject = `Fee Balance Reminder - ${SCHOOL}`;
+      html = wrap(feeReminderContent({ ...reminder_data, portalUrl }));
 
     } else {
       return new Response(
