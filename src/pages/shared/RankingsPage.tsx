@@ -7,10 +7,11 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 
 interface RankingsPageProps {
   classFilter?: boolean;
-  studentHighlight?: string; // user_id to highlight
+  studentHighlight?: string;
+  defaultClass?: string;
 }
 
-const RankingsPage = ({ classFilter = true, studentHighlight }: RankingsPageProps) => {
+const RankingsPage = ({ classFilter = true, studentHighlight, defaultClass }: RankingsPageProps) => {
   const [classes, setClasses] = useState<any[]>([]);
   const [subjects, setSubjects] = useState<any[]>([]);
   const [profiles, setProfiles] = useState<any[]>([]);
