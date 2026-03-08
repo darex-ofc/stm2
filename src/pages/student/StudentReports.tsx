@@ -451,22 +451,32 @@ const StudentReports = () => {
   };
 
   const downloadReportCard = async () => {
-    const result = await generateReportPDF();
-    if (!result) return;
-    const filename = `Report_Card_${profileName.replace(/\s+/g, "_")}_${term.toUpperCase()}_${year}.pdf`;
-    result.doc.save(filename);
+    setIsGenerating(true);
+    try {
+      const result = await generateReportPDF();
+      if (!result) return;
+      const filename = `Report_Card_${profileName.replace(/\s+/g, "_")}_${term.toUpperCase()}_${year}.pdf`;
+      result.doc.save(filename);
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const printReportCard = async () => {
-    const result = await generateReportPDF();
-    if (!result) return;
-    const pdfBlob = result.doc.output("blob");
-    const url = URL.createObjectURL(pdfBlob);
-    const w = window.open(url, "_blank");
-    if (w) {
-      w.onload = () => { w.print(); };
+    setIsGenerating(true);
+    try {
+      const result = await generateReportPDF();
+      if (!result) return;
+      const pdfBlob = result.doc.output("blob");
+      const url = URL.createObjectURL(pdfBlob);
+      const w = window.open(url, "_blank");
+      if (w) {
+        w.onload = () => { w.print(); };
+      }
+      setTimeout(() => URL.revokeObjectURL(url), 30000);
+    } finally {
+      setIsGenerating(false);
     }
-    setTimeout(() => URL.revokeObjectURL(url), 30000);
   };
 
   return (
