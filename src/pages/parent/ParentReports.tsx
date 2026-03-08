@@ -132,6 +132,8 @@ const ParentReports = () => {
 
   const downloadReportCard = async () => {
     if (!canView || grades.length === 0) return;
+    setIsGenerating(true);
+    try {
     const logoBase64 = await getLogoBase64();
     const level = studentProfile?.level || "o_level";
     const totalMark = grades.reduce((sum, g) => sum + Number(g.mark), 0);
