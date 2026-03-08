@@ -61,6 +61,7 @@ import AdminRankings from "./pages/admin/AdminRankings";
 import AdminMessages from "./pages/admin/AdminMessages";
 import AdminHomepageUpdates from "./pages/admin/AdminHomepageUpdates";
 import AdminStaffGallery from "./pages/admin/AdminStaffGallery";
+import AdminStudentHistory from "./pages/admin/AdminStudentHistory";
 
 // Parent pages
 import ParentDashboard from "./pages/parent/ParentDashboard";
