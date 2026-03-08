@@ -277,12 +277,22 @@ const Signup = () => {
 
   const classSelectField = (
     <div>
-      <label className="text-sm font-medium text-foreground">Class</label>
-      <select className="w-full border border-input rounded-lg px-3 py-2 bg-background text-sm" value={selectedClass} onChange={e => setSelectedClass(e.target.value)}>
-        <option value="">Select class...</option>
-        {filteredClasses.map(c => <option key={c.id} value={c.id}>{c.name}{c.stream ? ` (${c.stream})` : ""}</option>)}
-      </select>
-      {filteredClasses.length === 0 && <p className="text-xs text-muted-foreground mt-1">No classes available for this level/form.</p>}
+      <label className="text-sm font-medium text-foreground">Class *</label>
+      {filteredClasses.length > 0 ? (
+        <select className="w-full border border-input rounded-lg px-3 py-2 bg-background text-sm" value={selectedClass} onChange={e => setSelectedClass(e.target.value)}>
+          <option value="">Select class...</option>
+          {filteredClasses.map(c => <option key={c.id} value={c.id}>{c.name}{c.stream ? ` (${c.stream})` : ""}</option>)}
+        </select>
+      ) : (
+        <div className="p-3 rounded-lg border border-destructive/30 bg-destructive/5 text-sm">
+          <p className="font-medium text-destructive">No classes available</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            {classes.length === 0
+              ? "No classes have been set up yet. Please contact the school administration."
+              : `No classes found for ${selectedLevel.replace("_", " ").toUpperCase()} Form ${selectedForm}. Try selecting a different level or form, or contact the admin.`}
+          </p>
+        </div>
+      )}
     </div>
   );
 
