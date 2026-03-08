@@ -589,6 +589,19 @@ const StudentReports = () => {
                         <Button onClick={printReportCard} variant="outline" size="sm" disabled={isGenerating}>
                           <Printer className="w-4 h-4 mr-2" /> Print
                         </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="sm" disabled={isGenerating}>
+                              <Share2 className="w-4 h-4 mr-2" /> Share
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent>
+                            <DropdownMenuItem onClick={() => shareReport("whatsapp")}>📱 WhatsApp</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => shareReport("email")}>📧 Email</DropdownMenuItem>
+                            {navigator.share && <DropdownMenuItem onClick={() => shareReport("native")}>📤 More Options</DropdownMenuItem>}
+                            <DropdownMenuItem onClick={() => shareReport("copy")}>📋 Copy Summary</DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     )}
                   </CardHeader>
