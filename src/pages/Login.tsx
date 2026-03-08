@@ -225,7 +225,7 @@ const Login = () => {
                     Forgot your password?
                   </Link>
                   <Link to="/signup" className="text-sm text-primary hover:underline block">
-                    Create an account with access code
+                    Don't have an account? Sign up
                   </Link>
                 </div>
               </CardContent>
