@@ -112,7 +112,7 @@ const StudentReports = () => {
   }, [user, term, year]);
 
   const canViewReports = !reportsLocked && !hasFeeBalance;
-  const avgMark = grades.length > 0 ? Math.round(grades.reduce((s, g) => s + Number(g.mark), 0) / grades.length) : 0;
+  const avgMark = grades.length > 0 ? parseFloat((grades.reduce((s, g) => s + Number(g.mark), 0) / grades.length).toFixed(1)) : 0;
   const presentCount = attendance.filter(a => a.status === "present").length;
   const attendanceRate = attendance.length > 0 ? Math.round((presentCount / attendance.length) * 100) : 0;
 
