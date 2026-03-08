@@ -185,10 +185,55 @@ const AdminUsers = () => {
     </TableHead>
   );
 
+  const toggleSelect = (userId: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(userId)) next.delete(userId); else next.add(userId);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = (data: any[]) => {
+    const ids = data.map(u => u.user_id);
+    const allSelected = ids.every(id => selectedIds.has(id));
+    if (allSelected) {
+      setSelectedIds(prev => { const next = new Set(prev); ids.forEach(id => next.delete(id)); return next; });
+    } else {
+      setSelectedIds(prev => { const next = new Set(prev); ids.forEach(id => next.add(id)); return next; });
+    }
+  };
+
+  const handleBatchDelete = async () => {
+    const nonAdmins = users.filter(u => selectedIds.has(u.user_id) && u.role !== "admin");
+    if (nonAdmins.length === 0) { toast({ title: "No users to delete", description: "Admin accounts cannot be batch deleted.", variant: "destructive" }); return; }
+    if (!confirm(`Remove ${nonAdmins.length} user(s)? This will delete their roles and profiles.`)) return;
+    await Promise.all(nonAdmins.map(u => Promise.all([
+      supabase.from("user_roles").delete().eq("user_id", u.user_id),
+      supabase.from("student_profiles").delete().eq("user_id", u.user_id),
+      supabase.from("teacher_profiles").delete().eq("user_id", u.user_id),
+    ])));
+    toast({ title: `${nonAdmins.length} users removed` });
+    setSelectedIds(new Set());
+    fetchData();
+  };
+
+  const handleBatchDeactivate = async () => {
+    const studentIds = users.filter(u => selectedIds.has(u.user_id) && u.role === "student").map(u => u.user_id);
+    if (studentIds.length === 0) { toast({ title: "No students selected", variant: "destructive" }); return; }
+    if (!confirm(`Deactivate ${studentIds.length} student(s)?`)) return;
+    await Promise.all(studentIds.map(id => supabase.from("student_profiles").update({ is_active: false }).eq("user_id", id)));
+    toast({ title: `${studentIds.length} students deactivated` });
+    setSelectedIds(new Set());
+    fetchData();
+  };
+
   const UserTable = ({ data, showRole = true }: { data: any[]; showRole?: boolean }) => (
     <Table>
       <TableHeader>
         <TableRow>
+          <TableHead className="w-10">
+            <Checkbox checked={data.length > 0 && data.every(u => selectedIds.has(u.user_id))} onCheckedChange={() => toggleSelectAll(data)} />
+          </TableHead>
           <TableHead className="w-12"></TableHead>
           <SortHeader field="full_name">Name</SortHeader>
           <TableHead>Email</TableHead>
@@ -200,11 +245,14 @@ const AdminUsers = () => {
       </TableHeader>
       <TableBody>
         {loading ? (
-          <TableRow><TableCell colSpan={showRole ? 7 : 6} className="text-center py-8 text-muted-foreground">Loading...</TableCell></TableRow>
+          <TableRow><TableCell colSpan={showRole ? 8 : 7} className="text-center py-8 text-muted-foreground">Loading...</TableCell></TableRow>
         ) : sorted(data).length === 0 ? (
-          <TableRow><TableCell colSpan={showRole ? 7 : 6} className="text-center py-8 text-muted-foreground">No users found.</TableCell></TableRow>
+          <TableRow><TableCell colSpan={showRole ? 8 : 7} className="text-center py-8 text-muted-foreground">No users found.</TableCell></TableRow>
         ) : sorted(data).map(u => (
-          <TableRow key={u.id} className={u.studentProfile?.is_active === false ? "opacity-50 bg-destructive/5" : ""}>
+          <TableRow key={u.id} className={`${u.studentProfile?.is_active === false ? "opacity-50 bg-destructive/5" : ""} ${selectedIds.has(u.user_id) ? "bg-primary/5" : ""}`}>
+            <TableCell>
+              <Checkbox checked={selectedIds.has(u.user_id)} onCheckedChange={() => toggleSelect(u.user_id)} />
+            </TableCell>
             <TableCell>
               {u.avatar_url ? (
                 <img src={u.avatar_url} alt={u.full_name} className="w-8 h-8 rounded-full object-cover border border-border" />
