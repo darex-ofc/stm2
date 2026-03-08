@@ -556,9 +556,14 @@ const StudentReports = () => {
                   <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-3">
                     <CardTitle className="flex items-center gap-2"><FileText className="w-5 h-5" /> {term.replace("_", " ").toUpperCase()} {year} Report Card</CardTitle>
                     {grades.length > 0 && (
-                      <Button onClick={downloadReportCard} variant="outline" size="sm">
-                        <Download className="w-4 h-4 mr-2" /> Download Report Card
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button onClick={downloadReportCard} variant="default" size="sm">
+                          <Download className="w-4 h-4 mr-2" /> Download PDF
+                        </Button>
+                        <Button onClick={printReportCard} variant="outline" size="sm">
+                          <Printer className="w-4 h-4 mr-2" /> Print
+                        </Button>
+                      </div>
                     )}
                   </CardHeader>
                   <CardContent>
