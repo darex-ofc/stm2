@@ -64,6 +64,7 @@ import AdminHomepageUpdates from "./pages/admin/AdminHomepageUpdates";
 import AdminStaffGallery from "./pages/admin/AdminStaffGallery";
 import AdminStudentHistory from "./pages/admin/AdminStudentHistory";
 import AdminRecordBooks from "./pages/admin/AdminRecordBooks";
+import AdminStaffManagement from "./pages/admin/AdminStaffManagement";
 
 // Parent pages
 import ParentDashboard from "./pages/parent/ParentDashboard";
