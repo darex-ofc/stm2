@@ -485,6 +485,17 @@ serve(async (req) => {
       subject = `Fee Payment Receipt ${receipt_data.receiptNumber} - ${SCHOOL}`;
       html = wrap(receiptContent(receipt_data));
 
+    } else if (type === 'parent_link') {
+      const { link_data } = body;
+      if (!link_data) {
+        return new Response(
+          JSON.stringify({ error: 'Link data is required' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        );
+      }
+      subject = `Parent-Student Account Linked - ${SCHOOL}`;
+      html = wrap(parentLinkContent(link_data));
+
     } else {
       return new Response(
         JSON.stringify({ error: 'Invalid email type' }),
