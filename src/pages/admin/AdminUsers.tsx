@@ -87,14 +87,24 @@ const AdminUsers = () => {
   useEffect(() => { fetchData(); }, []);
 
   const handleDeleteUser = async (userId: string, userName: string) => {
-    if (!confirm(`Are you sure you want to remove ${userName}?`)) return;
-    await Promise.all([
-      supabase.from("user_roles").delete().eq("user_id", userId),
-      supabase.from("student_profiles").delete().eq("user_id", userId),
-      supabase.from("teacher_profiles").delete().eq("user_id", userId),
-    ]);
-    toast({ title: "User Removed" });
-    fetchData();
+    if (!confirm(`Are you sure you want to PERMANENTLY delete ${userName}? This cannot be undone.`)) return;
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-delete-user`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${session?.access_token}`,
+        },
+        body: JSON.stringify({ user_ids: [userId] }),
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "Delete failed");
+      toast({ title: "User Permanently Deleted", description: `${userName} has been removed from the system.` });
+      fetchData();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
   };
 
   const viewDetails = (user: any) => {
