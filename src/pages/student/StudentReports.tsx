@@ -466,6 +466,30 @@ const StudentReports = () => {
     }
   };
 
+  const shareReport = async (platform: string) => {
+    setIsGenerating(true);
+    try {
+      const result = await generateReportPDF();
+      if (!result) return;
+      const blob = result.doc.output("blob");
+      const file = new File([blob], `Report_${profileName.replace(/\s+/g, "_")}.pdf`, { type: "application/pdf" });
+      const shareText = `📄 ${profileName}'s Report Card - ${term.replace("_", " ").toUpperCase()} ${year}\n📊 Average: ${avgMark}%\n🏫 ${schoolInfo.name}`;
+
+      if (platform === "native" && navigator.share) {
+        await navigator.share({ title: `${profileName}'s Report Card`, text: shareText, files: [file] });
+      } else if (platform === "whatsapp") {
+        window.open(`https://wa.me/?text=${encodeURIComponent(shareText)}`, "_blank");
+        result.doc.save(`Report_${profileName.replace(/\s+/g, "_")}.pdf`);
+      } else if (platform === "email") {
+        const subject = encodeURIComponent(`${profileName}'s Report Card - ${term.replace("_", " ").toUpperCase()} ${year}`);
+        window.open(`mailto:?subject=${subject}&body=${encodeURIComponent(shareText)}`, "_self");
+        result.doc.save(`Report_${profileName.replace(/\s+/g, "_")}.pdf`);
+      } else if (platform === "copy") {
+        await navigator.clipboard.writeText(shareText);
+      }
+    } finally { setIsGenerating(false); }
+  };
+
   return (
     <DashboardLayout role="student">
       <div className="space-y-6">
