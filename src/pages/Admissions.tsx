@@ -50,6 +50,7 @@ const Admissions = () => {
     email: "",
     phone: "",
     date_of_birth: "",
+    gender: "",
     level: "o_level" as "zjc" | "o_level" | "a_level",
     form: 1,
     guardian_name: "",
