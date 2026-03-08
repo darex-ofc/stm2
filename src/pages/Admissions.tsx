@@ -82,6 +82,7 @@ const Admissions = () => {
       email: form.email,
       phone: form.phone || null,
       date_of_birth: form.date_of_birth || null,
+      gender: form.gender || null,
       level: form.level,
       form: form.form,
       guardian_name: form.guardian_name || null,
