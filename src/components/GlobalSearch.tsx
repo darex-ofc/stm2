@@ -106,7 +106,11 @@ const GlobalSearch = ({ role }: GlobalSearchProps) => {
 
   useEffect(() => {
     if (open) setTimeout(() => inputRef.current?.focus(), 100);
-    else setQuery("");
+    else {
+      setQuery("");
+      setIsSearching(false);
+      setShowResults(true);
+    }
   }, [open]);
 
   const go = (path: string) => {
