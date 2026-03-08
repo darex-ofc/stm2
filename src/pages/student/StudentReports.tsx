@@ -385,21 +385,9 @@ const StudentReports = () => {
 
     y = sigY + 26;
 
-    // QR code section
+    // QR code section - generate locally (fast)
     try {
-      const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(verifyUrl)}`;
-      const qrImg = await new Promise<string>((resolve) => {
-        const img = new Image();
-        img.crossOrigin = "anonymous";
-        img.onload = () => {
-          const c = document.createElement("canvas");
-          c.width = img.width; c.height = img.height;
-          c.getContext("2d")?.drawImage(img, 0, 0);
-          resolve(c.toDataURL("image/png"));
-        };
-        img.onerror = () => resolve("");
-        img.src = qrUrl;
-      });
+      const qrImg = await QRCode.toDataURL(verifyUrl, { width: 200, margin: 1 });
 
       if (qrImg) {
         doc.setDrawColor(220);
