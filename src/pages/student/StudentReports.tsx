@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableHeader, TableHead, TableBody, TableRow, TableCell } from "@/components/ui/table";
-import { AlertTriangle, FileText, Lock, DollarSign, BookOpen, ClipboardCheck, TrendingUp, Download } from "lucide-react";
+import { AlertTriangle, FileText, Lock, DollarSign, BookOpen, ClipboardCheck, TrendingUp, Download, Printer } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Progress } from "@/components/ui/progress";
 import { getGrade, getGradeColor, type GradingScale } from "@/lib/grading";
