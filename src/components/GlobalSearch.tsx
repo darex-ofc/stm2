@@ -136,7 +136,7 @@ const GlobalSearch = ({ role }: GlobalSearchProps) => {
             <Input
               ref={inputRef}
               value={query}
-              onChange={e => setQuery(e.target.value)}
+              onChange={e => handleQueryChange(e.target.value)}
               placeholder="Search pages & features..."
               className="border-0 focus-visible:ring-0 shadow-none h-12 text-base"
             />
