@@ -78,6 +78,7 @@ const AdminUsers = () => {
         address: sp.address || "", emergency_contact: sp.emergency_contact || "",
         emergency_phone: sp.emergency_phone || "", blood_type: sp.blood_type || "",
         allergies: sp.allergies || "", medical_conditions: sp.medical_conditions || "",
+        gender: sp.gender || "",
       });
     }
     setEditingSP(false);
