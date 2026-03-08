@@ -111,6 +111,23 @@ const AdminUsers = () => {
     }
   };
 
+  const handleBanUser = async (userId: string, currentlyBanned: boolean) => {
+    const action = currentlyBanned ? "unban" : "ban";
+    const reason = currentlyBanned ? null : prompt("Enter ban reason (optional):");
+    if (!currentlyBanned && reason === null) return; // User cancelled prompt
+    const { error } = await supabase.from("profiles").update({
+      is_banned: !currentlyBanned,
+      banned_reason: currentlyBanned ? null : (reason || "Banned by admin"),
+      banned_at: currentlyBanned ? null : new Date().toISOString(),
+    }).eq("user_id", userId);
+    if (error) toast({ title: "Error", description: error.message, variant: "destructive" });
+    else {
+      toast({ title: currentlyBanned ? "User Unbanned" : "User Banned", description: currentlyBanned ? "Account has been restored." : "User can no longer access the system." });
+      fetchData();
+      setDetailOpen(false);
+    }
+  };
+
   // Parent-child linking
   const getLinkedChildren = (parentId: string) => {
     return parentLinks
