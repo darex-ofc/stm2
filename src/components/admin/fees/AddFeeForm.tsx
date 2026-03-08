@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { PAYMENT_METHODS, getTermFromDate, generateReceipt } from "./FeeConstants";
+import { PAYMENT_METHODS, getTermFromDate, generateReceipt, methodLabel } from "./FeeConstants";
 
 interface Props {
   students: any[];
