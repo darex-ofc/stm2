@@ -156,7 +156,14 @@ const Signup = () => {
       }
     } else if (selectedRole === "parent") {
       if (phone) {
-        await supabase.from("profiles").update({ phone }).eq("user_id", authData.user.id);
+        // Wait briefly for the handle_new_user trigger to create the profile row
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        const { error: phoneErr } = await supabase.from("profiles").update({ phone }).eq("user_id", authData.user.id);
+        if (phoneErr) {
+          // Retry once more after another delay
+          await new Promise(resolve => setTimeout(resolve, 1500));
+          await supabase.from("profiles").update({ phone }).eq("user_id", authData.user.id);
+        }
       }
       if (childStudentId.trim()) {
         const { data: studentProfile } = await supabase
