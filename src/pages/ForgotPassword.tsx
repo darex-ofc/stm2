@@ -18,20 +18,7 @@ const ForgotPassword = () => {
     e.preventDefault();
     setLoading(true);
 
-    // Check if user exists in profiles table first
-    const { data: profileData } = await supabase
-      .from("profiles")
-      .select("id")
-      .eq("email", email.trim().toLowerCase())
-      .maybeSingle();
-
-    if (!profileData) {
-      toast({ title: "Account Not Found", description: "No account exists with this email address.", variant: "destructive" });
-      setLoading(false);
-      return;
-    }
-
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
       redirectTo: `${window.location.origin}/reset-password`,
     });
 
@@ -41,7 +28,7 @@ const ForgotPassword = () => {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {
       setSent(true);
-      toast({ title: "Email sent", description: "Check your inbox for the password reset link." });
+      toast({ title: "Email sent", description: "Check your inbox for the password reset link. Also check your spam/junk folder." });
     }
   };
 
