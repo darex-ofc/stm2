@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { User, Save, Heart, Shield, Edit, X } from "lucide-react";
 import AvatarUpload from "@/components/AvatarUpload";
 import ThemeToggle from "@/components/ThemeToggle";
+import PhoneInput from "@/components/PhoneInput";
 
 const StudentProfile = () => {
   const { user, profile } = useAuth();
