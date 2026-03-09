@@ -12,7 +12,7 @@ const HeroSection = () => {
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
       {/* Background */}
       <div className="absolute inset-0">
-        <img src={heroBg} alt="St. Mary's Campus" className="w-full h-full object-cover" />
+        <img src={heroBg} alt="St. Mary's Campus" className="w-full h-full object-cover" fetchPriority="high" decoding="async" />
         <div className="absolute inset-0 bg-gradient-to-b from-[hsl(212,100%,10%/0.95)] via-[hsl(212,100%,20%/0.85)] to-[hsl(212,100%,15%/0.92)]" />
       </div>
 
@@ -20,7 +20,7 @@ const HeroSection = () => {
       <div className="relative z-10 text-center px-4 max-w-4xl mx-auto pt-20">
         {/* Logo */}
         <div className="mb-6 animate-fade-in-up">
-          <img src={schoolLogo} alt="St. Mary's High School Crest" className="h-28 md:h-36 mx-auto drop-shadow-2xl" />
+          <img src={schoolLogo} alt="St. Mary's High School Crest" className="h-28 md:h-36 mx-auto drop-shadow-2xl" fetchPriority="high" decoding="async" />
         </div>
 
         <h1 className="font-display text-3xl md:text-5xl lg:text-6xl font-bold text-white mb-4 animate-fade-in-up" style={{ animationDelay: "0.1s" }}>
