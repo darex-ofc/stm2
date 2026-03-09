@@ -12,7 +12,7 @@ const HeroSection = () => {
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
       {/* Background */}
       <div className="absolute inset-0">
-        <img src={heroBg} alt="St. Mary's Campus" className="w-full h-full object-cover" />
+        <img src={heroBg} alt="St. Mary's Campus" className="w-full h-full object-cover" fetchPriority="high" decoding="async" />
         <div className="absolute inset-0 bg-gradient-to-b from-[hsl(212,100%,10%/0.95)] via-[hsl(212,100%,20%/0.85)] to-[hsl(212,100%,15%/0.92)]" />
       </div>
 
