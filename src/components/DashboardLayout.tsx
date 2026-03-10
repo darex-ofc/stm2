@@ -77,6 +77,7 @@ const parentNav: NavItem[] = [
   { label: "Attendance", path: "/parent/attendance", icon: ClipboardCheck },
   { label: "Fees", path: "/parent/fees", icon: DollarSign },
   { label: "Messages", path: "/parent/messages", icon: MessageSquare },
+  { label: "Verify Documents", path: "/parent/verify", icon: ShieldCheck },
   { label: "Settings", path: "/parent/settings", icon: Settings },
 ];
 
