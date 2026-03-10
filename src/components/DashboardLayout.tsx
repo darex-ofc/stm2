@@ -7,7 +7,7 @@ import GlobalSearch from "@/components/GlobalSearch";
 import {
   Menu, X, LogOut, Home, Users, BookOpen, ClipboardCheck,
   FileText, Bell, Settings, BarChart3, Key, GraduationCap,
-  DollarSign, User, Receipt, MessageSquare, Trophy, Newspaper, Image, History, ShieldAlert
+  DollarSign, User, Receipt, MessageSquare, Trophy, Newspaper, Image, History, ShieldAlert, ShieldCheck
 } from "lucide-react";
 import schoolLogo from "@/assets/school-logo.png";
 import NotificationBell from "@/components/NotificationBell";
